@@ -1,0 +1,64 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/extlib/lib/perl5";
+use lib "$FindBin::Bin/lib";
+use File::Basename;
+use Plack::Builder;
+use Plack::Runner;
+use Proclet::Declare;
+use Urume::Web;
+use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
+use Log::Minimal;
+use Path::Class qw( file );
+
+my ($dir);
+GetOptions(
+    "dir|d=s" => \$dir,
+);
+
+my $config = Urume::Web->config(
+    "config.pl",
+    "config_local.pl",
+    {
+        datadir => $dir,
+        redis   => {
+            sock      => "$dir/redis.sock",
+            reconnect => 60,
+        },
+    },
+);
+
+service(
+    "redis",
+    sub {
+        chdir $dir or die "Can't chdir to $dir: $!";
+        file("redis.conf")->openw->print(q{
+unixsocket redis.sock
+port 0
+loglevel notice
+});
+        exec "redis-server", "redis.conf";
+    }
+);
+
+service(
+    "web",
+    sub {
+        my $root_dir = File::Basename::dirname(__FILE__);
+        my $app = builder {
+            enable 'ReverseProxy';
+            enable 'Static',
+                path => qr!^/(?:(?:css|js|img)/|favicon\.ico$)!,
+                root => $root_dir . '/public';
+            Urume::Web->psgi($root_dir);
+        };
+        my $runner = Plack::Runner->new;
+        $runner->parse_options(@ARGV);
+        $runner->run($app);
+    }
+);
+color;
+run;

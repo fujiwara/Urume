@@ -1,6 +1,33 @@
 : cascade base
 : around content -> {
-<h1><: $greeting :> <: $c.stash.site_name :></h1>
-<p>Use this document as a way to quick start any new project.<br> All you get is this message and a barebones HTML document.</p>
+<h1><: $c.stash.site_name :></h1>
+
+<h2>Virtual Machines</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>id</th>
+      <th>name</th>
+      <th>IP address</th>
+      <th>mac</th>
+      <th>active</th>
+      <th>CPU</th>
+      <th>Memory</th>
+    </tr>
+  </thead>
+  <tbody>
+: for $vms -> $vm {
+    <tr>
+      <td><: $vm.id :></td>
+      <td><: $vm.name :></td>
+      <td><: $vm.ip_addr :></td>
+      <td><: $vm.mac_addr :></td>
+      <td><i class="icon-<: $vm.status.active ? 'ok' : 'off' :>"></i></td>
+      <td><: $vm.status.cpu :></td>
+      <td><: $vm.status.memory :></td>
+    </tr>
+: }
+  </tbody>
+</table>
 : }
 
