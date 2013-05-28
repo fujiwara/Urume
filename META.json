@@ -42,14 +42,17 @@
       },
       "runtime" : {
          "requires" : {
+            "Config::PL" : "0",
+            "Kossy" : "0",
+            "Net::IP" : "0",
+            "Proclet" : "0",
+            "Redis" : "0",
             "perl" : "5.008005"
          }
       },
       "test" : {
          "requires" : {
-            "Config::PL" : "0",
-            "Kossy" : "0",
-            "Redis" : "0",
+            "Net::CIDR::Lite" : "0",
             "Test::More" : "0.98"
          }
       }

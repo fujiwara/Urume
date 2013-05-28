@@ -12,7 +12,7 @@ sub new {
     my $class  = shift;
     my $config = shift;
     bless {
-        redis      => Redis->new( %{ $config->{redis} }),
+        redis      => Redis->new( @{ $config->{redis} }),
         ua         => LWP::UserAgent->new( user_agent => "$class/$VERSION" ),
         images_dir => $config->{images_dir} || "/var/lib/libvirt/images",
         host       => $config->{host} || qx{ hostname -s },
@@ -41,28 +41,46 @@ sub report_vm_status {
 }
 
 sub wait_for_events {
-    my $self = shift;
+    my $self    = shift;
+    my $timeout = shift;
 
     my $channel = "host_events_ch:$self->{host}";
     debugf "subscribe for %s", $channel;
 
-    my $message = $self->{redis}->subscribe($channel);
-    debugf "message arrival: %s", $message;
-    my ($command, @attr) = split /:/, $message;
-
-    $self->invoke_command($command, @attr);
+    $self->{redis}->subscribe(
+        $channel => sub {
+            my $message = shift;
+            debugf "message arrival: %s", $message;
+            my ($command, @attr) = split /:/, $message;
+            $self->invoke_command($command, @attr);
+        }
+    );
+    if ($timeout) {
+        $self->{redis}->wait_for_messages($timeout);
+    }
+    else {
+        debugf "wait_for_events forever...";
+        $self->{redis}->wait_for_messages(10) while 1;
+    }
 }
 
 sub invoke_command {
     my $self = shift;
     my ($command, @attr) = @_;
     if ( my $method = $self->can("_command_${command}") ) {
-        infof "run command: %s attr %s", $command, ddf @attr;
+        infof "run command:%s attr:%s", $command, ddf \@attr;
         $method->($self, @attr);
     }
     else {
-        warnf "not supported command: %s attr: %s", $command, ddf @attr;
+        warnf "not supported command:%s attr:%s", $command, ddf \@attr;
     }
+}
+
+sub _command__test {
+    my $self = shift;
+    my $name = shift;
+    infof "ok test: %s", $name;
+    1;
 }
 
 sub _execute_virsh {
@@ -78,19 +96,19 @@ sub _execute_virsh {
     $r == 0;
 }
 
-sub _command_start_vm {
+sub _command_start {
     my $self = shift;
     my $name = shift;
     $self->_execute_virsh("start", $name);
 }
 
-sub _command_stop_vm {
+sub _command_stop {
     my $self = shift;
     my $name = shift;
     $self->_execute_virsh("shutdown", $name);
 }
 
-sub _command_remove_vm {
+sub _command_remove {
     my $self = shift;
     my $name = shift;
 
@@ -101,13 +119,13 @@ sub _command_remove_vm {
     $self->_execute_virsh("undefine", $name);
 }
 
-sub _command_halt_vm {
+sub _command_halt {
     my $self = shift;
     my $name = shift;
     $self->_execute_virsh("destroy", $name);
 }
 
-sub _command_clone_vm {
+sub _command_clone {
     my $self = shift;
     my ($name, $base, $mac_addr) = @_;
 

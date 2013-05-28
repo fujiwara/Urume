@@ -6,24 +6,14 @@ use Urume::Storage;
 use Redis;
 use Net::CIDR::Lite;
 use Try::Tiny;
+use t::Util;
 
-my $redis_server;
-eval {
-    $redis_server = Test::RedisServer->new;
-} or plan skip_all => 'redis-server is required to this test';
-
+my $redis_server = t::Util->redis_server;
 my $redis = Redis->new( $redis_server->connect_info );
-is $redis->ping, 'PONG', 'ping pong ok';
 
 my $storage = Urume::Storage->new(
     redis  => $redis,
-    config => {
-        mac_address_base => 13128,
-        dhcp => {
-            range => ["192.168.0.64", "192.168.0.127"],
-        },
-        hosts => ["host01", "host02"],
-    },
+    config => t::Util->config,
 );
 isa_ok $storage, "Urume::Storage";
 
@@ -47,8 +37,8 @@ subtest "generate_mac_addr" => sub {
     }
 };
 
-subtest "init_ip_addr_pool" => sub {
-    ok $storage->init_ip_addr_pool;
+subtest "init" => sub {
+    ok $storage->init;
 };
 
 subtest "get_ip_addr_from_pool" => sub {
@@ -83,8 +73,8 @@ subtest "release_ip_addr" => sub {
     };
 };
 
-subtest "re init_ip_addr_pool" => sub {
-    ok $storage->init_ip_addr_pool;
+subtest "re init" => sub {
+    ok $storage->init;
     ok $storage->get_ip_addr_from_pool();
 };
 
@@ -92,6 +82,7 @@ subtest "vm" => sub {
     my $vm = $storage->register_vm(
         name => "testvm",
         host => "host01",
+        base => "sl6",
     );
     isa_ok $vm, "HASH";
     is $vm->{name} => "testvm";
@@ -108,14 +99,12 @@ subtest "vm" => sub {
     my $vm_i = $storage->get_vm( ip_addr => $vm->{ip_addr} );
     is_deeply $vm_i => $vm;
 
-    ok $storage->destroy_vm( name => "testvm" );
+    ok $storage->remove_vm( name => "testvm" );
 
     ok !$storage->get_vm( name => "testvm" );
     ok !$storage->get_vm( ip_addr => $vm->{ip_addr} );
 
     is_deeply [ $storage->list_vm ] => [];
 };
-
-
 
 done_testing;

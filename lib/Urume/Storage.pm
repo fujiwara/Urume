@@ -42,7 +42,7 @@ sub generate_mac_addr {
     lc "52:54:00:$sub";
 }
 
-sub init_ip_addr_pool {
+sub init {
     my $self = shift;
 
     my $range
@@ -136,6 +136,11 @@ sub register_vm {
     croak "invalid host"
         unless @hosts;
 
+    my $base = $args{base};
+    unless ( grep { $_ eq $base } @{ $self->config->{base_images} } ) {
+        croak "invalid base image";
+    }
+
     my $id  = $self->generate_new_id;
     my $mac = $self->generate_mac_addr($id);
     my $ip  = $self->get_ip_addr_from_pool( to => $name );
@@ -146,6 +151,7 @@ sub register_vm {
         ip_addr  => $ip,
         mac_addr => $mac,
         host     => $host,
+        base     => $base,
     }));
     $self->redis->bgsave;
 
@@ -184,6 +190,18 @@ sub stop_vm {
 
     $self->redis->publish(
         "host_events_ch:$host" => "stop:$name"
+    );
+}
+
+sub _test_vm {
+    my $self = shift;
+
+    my $vm   = $self->get_vm(@_);
+    my $name = $vm->{name};
+    my $host = $vm->{host};
+
+    $self->redis->publish(
+        "host_events_ch:$host" => "_test:$name"
     );
 }
 

@@ -43,17 +43,18 @@ get '/dnsmasq.conf' => [qw/auto/] => sub {
     $c->res;
 };
 
-post '/vm' => [qw/auto/] => sub {
+post '/vm/register' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my $vm = $self->storage->register_vm(
-        name => $c->req->param("name"),
-        host => $c->req->param("host"),
-    );
+    my %args
+        = map { $_ => scalar $c->req->param($_) }
+            qw/ name host base /;
+    my $vm = $self->storage->register_vm(%args);
+
     $c->render_json($vm);
 };
 
-get '/vm/:name' => [qw/auto/] => sub {
+get '/vm/info/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     my $name = $c->args->{name};
 
@@ -63,7 +64,7 @@ get '/vm/:name' => [qw/auto/] => sub {
     $c->render_json($vm);
 };
 
-post '/vm_info/:name' => [qw/auto/] => sub {
+post '/vm/info/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     my $name = $c->args->{name};
 
@@ -80,15 +81,24 @@ post '/vm_info/:name' => [qw/auto/] => sub {
     $c->render_json($vm);
 };
 
-post '/vm_command/:name' => [qw/auto/] => sub {
+post '/vm/stop/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     my $name = $c->args->{name};
 
     my $vm = $self->storage->get_vm( name => $name );
     $c->halt(404) unless $vm;
 
-    $self->storage->
+    $self->storage->stop_vm( name => $name );
+};
 
+post '/vm/start/:name' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+    my $name = $c->args->{name};
+
+    my $vm = $self->storage->get_vm( name => $name );
+    $c->halt(404) unless $vm;
+
+    $self->storage->start_vm( name => $name );
 };
 
 post '/init' => [qw/auto/] => sub {
