@@ -12,7 +12,7 @@ sub new {
     my $class  = shift;
     my $config = shift;
     bless {
-        redis      => Redis->new( @{ $config->{redis} }),
+        redis      => Redis->new( %{ $config->{redis} }),
         ua         => LWP::UserAgent->new( user_agent => "$class/$VERSION" ),
         images_dir => $config->{images_dir} || "/var/lib/libvirt/images",
         host       => $config->{host} || qx{ hostname -s },
@@ -59,7 +59,7 @@ sub wait_for_events {
         $self->{redis}->wait_for_messages($timeout);
     }
     else {
-        debugf "wait_for_events forever...";
+        infof "wait_for_events %s forever...", $channel;
         $self->{redis}->wait_for_messages(10) while 1;
     }
 }

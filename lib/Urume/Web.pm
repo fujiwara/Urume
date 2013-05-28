@@ -46,10 +46,10 @@ get '/dnsmasq.conf' => [qw/auto/] => sub {
 post '/vm/register' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my %args
+    my @args
         = map { $_ => scalar $c->req->param($_) }
             qw/ name host base /;
-    my $vm = $self->storage->register_vm(%args);
+    my $vm = $self->storage->register_vm(@args);
 
     $c->render_json($vm);
 };
@@ -103,7 +103,7 @@ post '/vm/start/:name' => [qw/auto/] => sub {
 
 post '/init' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
-    $self->storage->init_ip_addr_pool;
+    $self->storage->init;
     $c->render_json({ ok => JSON::true });
 };
 

@@ -13,6 +13,7 @@ use Urume::Web;
 use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 use Log::Minimal;
 use Path::Class qw( file );
+use Urume::HostAgent;
 
 my ($dir);
 GetOptions(
@@ -28,6 +29,9 @@ my $config = Urume::Web->config(
             sock      => "$dir/redis.sock",
             reconnect => 60,
         },
+        hosts       => ["localhost"],
+        base_images => ["centos6"],
+        endpoint    => "http://127.0.0.1:5000",
     },
 );
 
@@ -60,5 +64,15 @@ service(
         $runner->run($app);
     }
 );
+
+service(
+    "hostagent",
+    sub {
+        $config->{host} = "localhost";
+        my $agent = Urume::HostAgent->new($config);
+        $agent->wait_for_events();
+    }
+);
+
 color;
 run;

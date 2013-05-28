@@ -34,7 +34,7 @@ if ($pid) {
 }
 else {
     my $agent = Urume::HostAgent->new({
-        redis    => [ $redis_server->connect_info ],
+        redis    => { $redis_server->connect_info },
         endpoint => "http://127.0.0.1:9999",
         host     => "localhost",
     });
