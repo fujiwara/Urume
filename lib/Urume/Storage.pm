@@ -92,7 +92,7 @@ sub list_vm {
         or return;
     my @vm = map { decode_json $_ } $redis->mget( $redis->keys("vm:*") );
     for my $vm (@vm) {
-        $vm->{status} = try { decode_json $self->redis->get("vm_info:$vm->{name}") };
+        $vm->{status} = $self->redis->get("vm_status:$vm->{name}");
     }
     @vm;
 }
@@ -113,16 +113,16 @@ sub get_vm {
     return unless defined $vm_str;
 
     my $vm = decode_json($vm_str);
-    $vm->{status} = try { decode_json $self->redis->get("vm_info:$vm->{name}") };
+    $vm->{status} = $self->redis->get("vm_status:$vm->{name}");
     $vm;
 }
 
-sub set_vm_info {
-    my $self = shift;
-    my $name = shift;
-    my $info = shift;
+sub set_vm_status {
+    my $self   = shift;
+    my $name   = shift;
+    my $status = shift;
 
-    $self->redis->set("vm_info:$name" => encode_json($info));
+    $self->redis->set("vm_status:$name" => $status);
 }
 
 sub register_vm {
@@ -164,6 +164,7 @@ sub remove_vm {
 
     my $vm = $self->get_vm(@_);
     my $name = $vm->{name};
+    my $host = $vm->{host};
     $self->release_ip_addr( $vm->{ip_addr} );
 
     $self->redis->publish(

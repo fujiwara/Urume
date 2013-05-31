@@ -13,7 +13,6 @@ sub new {
     my $config = shift;
     bless {
         redis      => Redis->new( %{ $config->{redis} }),
-        ua         => LWP::UserAgent->new( user_agent => "$class/$VERSION" ),
         images_dir => $config->{images_dir} || "/var/lib/libvirt/images",
         host       => $config->{host} || qx{ hostname -s },
         endpoint   => $config->{endpont},
@@ -31,9 +30,8 @@ sub report_vm_status {
         my ($id, $name, $state) = split /\s+/, $r;
         my $active = $state eq "running" ? 1 : 0;
         debugf "reporting vm_status %s %s", $name, $active;
-        my $res = $self->{ua}->post(
-            $self->{endpoint} . "vm_info/$name",
-            active => $active,
+        my $res = $self->{redis}->set(
+            "vm_status:$name" => $active,
         );
         $reported++ if $res->success;
     }
@@ -57,10 +55,14 @@ sub wait_for_events {
     );
     if ($timeout) {
         $self->{redis}->wait_for_messages($timeout);
+        return;
     }
     else {
         infof "wait_for_events %s forever...", $channel;
-        $self->{redis}->wait_for_messages(10) while 1;
+        while (1) {
+            $self->report_vm_status;
+            $self->{redis}->wait_for_messages(30);
+        }
     }
 }
 

@@ -31,12 +31,12 @@ if ($pid) {
     $storage->_test_vm( name => "testvm" );
 
     waitpid($pid, 0);
+    done_testing;
 }
 else {
     my $agent = Urume::HostAgent->new({
-        redis    => { $redis_server->connect_info },
-        endpoint => "http://127.0.0.1:9999",
-        host     => "localhost",
+        redis => { $redis_server->connect_info },
+        host  => "localhost",
     });
     isa_ok $agent => "Urume::HostAgent";
 
@@ -47,4 +47,3 @@ else {
     like $stderr => qr/ok test: testvm/;
 }
 
-done_testing;

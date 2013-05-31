@@ -71,10 +71,8 @@ post '/vm/info/:name' => [qw/auto/] => sub {
     my $vm = $self->storage->get_vm( name => $name );
     $c->halt(404) unless $vm;
 
-    $self->storage->set_vm_info(
-        $name => {
-            active => $c->req->param("active") ? JSON::true : JSON::false,
-        }
+    $self->storage->set_vm_status(
+        $name => $c->req->param("active") ? 1 : 0,
     );
 
     $vm = $self->storage->get_vm( name => $name );
