@@ -166,6 +166,9 @@ sub remove_vm {
     my $name = $vm->{name};
     $self->release_ip_addr( $vm->{ip_addr} );
 
+    $self->redis->publish(
+        "host_events_ch:$host" => "remove\t$name"
+    );
     return $self->redis->del("vm:$name");
 }
 
@@ -177,7 +180,7 @@ sub start_vm {
     my $host = $vm->{host};
 
     $self->redis->publish(
-        "host_events_ch:$host" => "start:$name"
+        "host_events_ch:$host" => "start\t$name"
     );
 }
 
@@ -189,7 +192,21 @@ sub stop_vm {
     my $host = $vm->{host};
 
     $self->redis->publish(
-        "host_events_ch:$host" => "stop:$name"
+        "host_events_ch:$host" => "stop\t$name"
+    );
+}
+
+sub clone_vm {
+    my $self = shift;
+
+    my $vm   = $self->get_vm(@_);
+    my $name = $vm->{name};
+    my $host = $vm->{host};
+    my $base = $vm->{base};
+    my $mac  = $vm->{mac_addr};
+
+    $self->redis->publish(
+        "host_events_ch:$host" => "clone\t$name\t$base\t$mac"
     );
 }
 
@@ -201,7 +218,7 @@ sub _test_vm {
     my $host = $vm->{host};
 
     $self->redis->publish(
-        "host_events_ch:$host" => "_test:$name"
+        "host_events_ch:$host" => "_test\t$name"
     );
 }
 

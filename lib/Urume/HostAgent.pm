@@ -51,7 +51,7 @@ sub wait_for_events {
         $channel => sub {
             my $message = shift;
             debugf "message arrival: %s", $message;
-            my ($command, @attr) = split /:/, $message;
+            my ($command, @attr) = split /\t/, $message;
             $self->invoke_command($command, @attr);
         }
     );

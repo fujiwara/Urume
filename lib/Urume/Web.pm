@@ -81,24 +81,20 @@ post '/vm/info/:name' => [qw/auto/] => sub {
     $c->render_json($vm);
 };
 
-post '/vm/stop/:name' => [qw/auto/] => sub {
+post '/vm/:method/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
-    my $name = $c->args->{name};
+    my $name   = $c->args->{name};
+    my $method = sprintf "%s_vm", $c->args->{method};
 
     my $vm = $self->storage->get_vm( name => $name );
     $c->halt(404) unless $vm;
 
-    $self->storage->stop_vm( name => $name );
-};
-
-post '/vm/start/:name' => [qw/auto/] => sub {
-    my ( $self, $c )  = @_;
-    my $name = $c->args->{name};
-
-    my $vm = $self->storage->get_vm( name => $name );
-    $c->halt(404) unless $vm;
-
-    $self->storage->start_vm( name => $name );
+    if ($self->storage->can($method)) {
+        $self->storage->$method( name => $name );
+    }
+    else {
+        $c->halt(404);
+    }
 };
 
 post '/init' => [qw/auto/] => sub {
