@@ -166,11 +166,11 @@ sub remove_vm {
     my $name = $vm->{name};
     my $host = $vm->{host};
     $self->release_ip_addr( $vm->{ip_addr} );
+    $self->redis->del("vm:$name");
 
     $self->redis->publish(
         "host_events_ch:$host" => "remove\t$name"
     );
-    return $self->redis->del("vm:$name");
 }
 
 sub start_vm {

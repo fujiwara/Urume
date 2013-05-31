@@ -59,10 +59,7 @@ sub wait_for_events {
     }
     else {
         infof "wait_for_events %s forever...", $channel;
-        while (1) {
-            $self->report_vm_status;
-            $self->{redis}->wait_for_messages(30);
-        }
+        $self->{redis}->wait_for_messages(10) while 1;
     }
 }
 
@@ -115,7 +112,7 @@ sub _command_remove {
     my $name = shift;
 
     my $file = sprintf "%s/%s.img", $self->{images_dir}, $name;
-    $file->unlink
+    unlink $file
         or warnf "Can't unlink image file %s: %s", $file, $!;
 
     $self->_execute_virsh("undefine", $name);

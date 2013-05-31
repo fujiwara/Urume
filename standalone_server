@@ -30,7 +30,7 @@ my $config = Urume::Web->config(
             reconnect => 60,
         },
         hosts       => ["localhost"],
-        base_images => ["centos6"],
+        base_images => ["sl6base"],
         endpoint    => "http://127.0.0.1:5000",
     },
 );
@@ -71,6 +71,18 @@ service(
         $config->{host} = "localhost";
         my $agent = Urume::HostAgent->new($config);
         $agent->wait_for_events();
+    }
+);
+
+service(
+    "hostagent-s",
+    sub {
+        $config->{host} = "localhost";
+        my $agent = Urume::HostAgent->new($config);
+        while (1) {
+            $agent->report_vm_status;
+            sleep 10;
+        }
     }
 );
 
