@@ -12,11 +12,22 @@ sub new {
     my $class  = shift;
     my $config = shift;
     bless {
-        redis      => Redis->new( %{ $config->{redis} }),
+        redis_e    => Redis->new( %{ $config->{redis} }),
+        redis_r    => Redis->new( %{ $config->{redis} }),
         images_dir => $config->{images_dir} || "/var/lib/libvirt/images",
-        host       => $config->{host} || qx{ hostname -s },
-        endpoint   => $config->{endpont},
+        host       => $config->{host}       || qx{ hostname -s },
+        timeout    => $config->{timeout}    || 30,
     }, $class;
+}
+
+sub run {
+    my $self = shift;
+
+    infof "starting hostagent";
+    while (1) {
+        $self->report_vm_status;
+        $self->wait_for_events( $self->{timeout} );
+    }
 }
 
 sub report_vm_status {
@@ -30,37 +41,34 @@ sub report_vm_status {
         my ($id, $name, $state) = split /\s+/, $r;
         my $active = $state eq "running" ? 1 : 0;
         debugf "reporting vm_status %s %s", $name, $active;
-        my $res = $self->{redis}->set(
+        my $res = $self->{redis_r}->set(
             "vm_status:$name" => $active,
         );
-        $reported++ if $res->success;
+        $reported++ if $res;
     }
     $reported;
 }
 
 sub wait_for_events {
-    my $self    = shift;
-    my $timeout = shift;
+    my $self = shift;
+    my $timeout = shift || $self->{timeout};
 
-    my $channel = "host_events_ch:$self->{host}";
-    debugf "subscribe for %s", $channel;
+    unless ($self->{_subscribed}) {
+        my $channel = "host_events_ch:$self->{host}";
+        debugf "subscribe for %s", $channel;
 
-    $self->{redis}->subscribe(
-        $channel => sub {
-            my $message = shift;
-            debugf "message arrival: %s", $message;
-            my ($command, @attr) = split /\t/, $message;
-            $self->invoke_command($command, @attr);
-        }
-    );
-    if ($timeout) {
-        $self->{redis}->wait_for_messages($timeout);
-        return;
+        $self->{redis_e}->subscribe(
+            $channel => sub {
+                my $message = shift;
+                debugf "message arrival: %s", $message;
+                my ($command, @attr) = split /\t/, $message;
+                $self->invoke_command($command, @attr);
+            }
+        );
+        $self->{_subscribed} = 1;
     }
-    else {
-        infof "wait_for_events %s forever...", $channel;
-        $self->{redis}->wait_for_messages(10) while 1;
-    }
+
+    $self->{redis_e}->wait_for_messages($timeout);
 }
 
 sub invoke_command {

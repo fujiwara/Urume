@@ -70,19 +70,7 @@ service(
     sub {
         $config->{host} = "localhost";
         my $agent = Urume::HostAgent->new($config);
-        $agent->wait_for_events();
-    }
-);
-
-service(
-    "hostagent-s",
-    sub {
-        $config->{host} = "localhost";
-        my $agent = Urume::HostAgent->new($config);
-        while (1) {
-            $agent->report_vm_status;
-            sleep 10;
-        }
+        $agent->run;
     }
 );
 

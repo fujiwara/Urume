@@ -171,6 +171,7 @@ sub remove_vm {
     $self->redis->publish(
         "host_events_ch:$host" => "remove\t$name"
     );
+    1;
 }
 
 sub start_vm {
