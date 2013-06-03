@@ -53,7 +53,9 @@
       "test" : {
          "requires" : {
             "Net::CIDR::Lite" : "0",
-            "Test::More" : "0.98"
+            "Test::More" : "0.98",
+            "Test::RedisServer" : "0",
+            "Test::SharedFork" : "0"
          }
       }
    },
