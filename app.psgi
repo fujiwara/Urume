@@ -7,6 +7,7 @@ use Urume::Web;
 
 my $root_dir = File::Basename::dirname(__FILE__);
 
+Urume::Web->config("config.pl", "config_local.pl");
 my $app = Urume::Web->psgi($root_dir);
 builder {
     enable 'ReverseProxy';

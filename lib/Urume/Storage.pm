@@ -28,6 +28,11 @@ has redis => (
     },
 );
 
+has renderer => (
+    is  => "rw",
+    isa => "CodeRef",
+);
+
 sub generate_new_id {
     my $self = shift;
     $self->redis->incr("vm_serial");
@@ -153,7 +158,6 @@ sub register_vm {
         host     => $host,
         base     => $base,
     }));
-    $self->redis->bgsave;
 
     return $self->get_vm( name => $name );
 }
@@ -171,6 +175,7 @@ sub remove_vm {
     $self->redis->publish(
         "host_events_ch:$host" => "remove\t$name"
     );
+    $self->publish_dnsmasq_conf;
     1;
 }
 
@@ -210,6 +215,8 @@ sub clone_vm {
     $self->redis->publish(
         "host_events_ch:$host" => "clone\t$name\t$base\t$mac"
     );
+    $self->publish_dnsmasq_conf;
+    1;
 }
 
 sub _test_vm {
@@ -222,6 +229,34 @@ sub _test_vm {
     $self->redis->publish(
         "host_events_ch:$host" => "_test\t$name"
     );
+}
+
+sub register_public_key {
+    my $self = shift;
+    my %args = @_;
+    my $vm   = $self->get_vm(%args);
+
+    $self->redis->set("public_key:$vm->{name}" => $args{key});
+}
+
+sub retrieve_public_key {
+    my $self = shift;
+    my %args = @_;
+    my $vm   = $self->get_vm(%args);
+    return unless $vm;
+
+    $self->redis->get("public_key:$vm->{name}");
+}
+
+sub publish_dnsmasq_conf {
+    my $self = shift;
+    if ( my $code = $self->renderer ) {
+        my @vms = $self->list_vm;
+        my $conf = $code->('dnsmasq.conf.tx', { vms => \@vms });
+        $self->redis->publish(
+            dnsmasq_events_ch => $conf,
+        );
+    }
 }
 
 1;

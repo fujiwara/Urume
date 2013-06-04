@@ -107,4 +107,25 @@ subtest "vm" => sub {
     is_deeply [ $storage->list_vm ] => [];
 };
 
+subtest "keyserver" => sub {
+    my $vm = $storage->register_vm(
+        name => "testvm2",
+        host => "host01",
+        base => "sl6",
+    );
+    my $ip = $vm->{ip_addr};
+
+    ok $storage->register_public_key(
+        name => "testvm2",
+        key  => "ssh-rsa dummy1\nssh-rsa dummy2",
+    );
+    my $key = $storage->retrieve_public_key( name => "testvm2" );
+    is $key => "ssh-rsa dummy1\nssh-rsa dummy2";
+
+    $key = $storage->retrieve_public_key( ip_addr => $ip );
+    is $key => "ssh-rsa dummy1\nssh-rsa dummy2";
+
+    ok ! $storage->retrieve_public_key( name => "testvm3" );
+};
+
 done_testing;

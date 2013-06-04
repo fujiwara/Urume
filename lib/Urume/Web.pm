@@ -16,7 +16,17 @@ filter 'auto' => sub {
         my ( $self, $c )  = @_;
         $c->stash->{config} = $self->config;
         my $storage = Urume::Storage->new(
-            config => $self->config,
+            config   => $self->config,
+            renderer => sub {
+                my $file = shift;
+                my %args = ( @_ && ref $_[0] ) ? %{$_[0]} : @_;
+                my %vars = (
+                    c     => $c,
+                    stash => $c->stash,
+                    %args,
+                );
+                $c->tx->render($file, \%vars);
+            },
         );
         $self->storage($storage);
         $app->($self, $c);
@@ -93,6 +103,43 @@ post '/vm/:method/:name' => [qw/auto/] => sub {
     else {
         $c->halt(404);
     }
+};
+
+get '/public_key' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my $ip_addr = $c->req->address;
+    my $key    = $self->storage->retrieve_public_key( ip_addr => $ip_addr );
+    $c->halt(404) unless $key;
+
+    $c->res->content_type("text/plain; charset=utf8");
+    $c->res->body($key);
+    $c->res;
+};
+
+get '/public_key/:name' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my $key = $self->storage->retrieve_public_key( name => $c->args->{name} );
+    $c->halt(404) unless $key;
+
+    $c->res->content_type("text/plain; charset=utf8");
+    $c->res->body($key);
+    $c->res;
+};
+
+post '/public_key/:name' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my $key = $c->req->param('key');
+    $c->halt(400) unless defined $key;
+
+    infof "register public key %s: %s", $c->args->{name}, $key;
+    $self->storage->register_public_key(
+        name => $c->args->{name},
+        key  => $key,
+    );
+    $c->render_json({ ok => JSON::true });
 };
 
 post '/init' => [qw/auto/] => sub {

@@ -3,7 +3,6 @@ package Urume::HostAgent;
 use strict;
 use warnings;
 use Log::Minimal;
-use LWP::UserAgent;
 use Redis;
 
 our $VERSION = "0.1";
@@ -11,13 +10,19 @@ our $VERSION = "0.1";
 sub new {
     my $class  = shift;
     my $config = shift;
-    bless {
-        redis_e    => Redis->new( %{ $config->{redis} }),
-        redis_r    => Redis->new( %{ $config->{redis} }),
+
+    my $self = {
+        redis      => $config->{redis},
         images_dir => $config->{images_dir} || "/var/lib/libvirt/images",
-        host       => $config->{host}       || qx{ hostname -s },
+        host       => $config->{host}       || do { my $host = qx{ hostname -s }; chomp $host; $host },
         timeout    => $config->{timeout}    || 30,
-    }, $class;
+    };
+    infof "%s created: %s", $class, ddf $self;
+
+    $self->{redis_e} = Redis->new( %{ $config->{redis} });
+    $self->{redis_r} = Redis->new( %{ $config->{redis} });
+
+    bless $self, $class;
 }
 
 sub run {
