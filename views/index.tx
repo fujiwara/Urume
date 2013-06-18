@@ -81,6 +81,8 @@ POST <: $c.req.uri_for('/vm/remove/') :>{name}
 <h3>Register public key for VM</h3>
 <pre>
 POST <: $c.req.uri_for('/public_key/') :>{name}
+parameters:
+  key: public key
 </pre>
 
 <h3>Retrieve public key</h3>
