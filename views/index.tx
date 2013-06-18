@@ -32,6 +32,20 @@
   </tbody>
 </table>
 
+<h2>Avaliable hosts</h2>
+<ul>
+: for $stash.config.hosts -> $h {
+  <li><: $h :></li>
+: }
+</ul>
+
+<h2>Avaliable base images</h2>
+<ul>
+: for $stash.config.base_images -> $b {
+  <li><: $b :></li>
+: }
+</ul>
+
 <h2 id="api" name="api">API</h2>
 
 <h3>Register new VM</h3>
