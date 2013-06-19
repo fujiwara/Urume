@@ -77,6 +77,13 @@ post '/vm/register' => [qw/auto/] => sub {
     $c->render_json($vm);
 };
 
+get '/vm/list' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my @vm = $self->storage->list_vm();
+    $c->render_json(\@vm);
+};
+
 get '/vm/info/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     my $name = $c->args->{name};

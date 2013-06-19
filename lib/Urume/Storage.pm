@@ -97,7 +97,8 @@ sub list_vm {
         or return;
     my @vm = map { decode_json $_ } $redis->mget( $redis->keys("vm:*") );
     for my $vm (@vm) {
-        $vm->{status} = $self->redis->get("vm_status:$vm->{name}");
+        $vm->{status}     = $redis->get("vm_status:$vm->{name}");
+        $vm->{public_key} = $redis->get("public_key:$vm->{name}");
     }
     @vm;
 }
@@ -105,20 +106,21 @@ sub list_vm {
 sub get_vm {
     my $self = shift;
     my %args = @_;
-
+    my $redis = $self->redis;
     my $vm_str;
     if ( my $name = $args{name} ) {
         croak "invalid name" if $name !~ /\A[a-zA-Z]\w+\z/;
-        $vm_str = $self->redis->get("vm:$name");
+        $vm_str = $redis->get("vm:$name");
     }
     elsif ( $args{ip_addr} ) {
-        my $name = $self->redis->hget("leased_ip_addr", $args{ip_addr});
-        $vm_str = $self->redis->get("vm:$name") if defined $name;
+        my $name = $redis->hget("leased_ip_addr", $args{ip_addr});
+        $vm_str = $redis->get("vm:$name") if defined $name;
     }
     return unless defined $vm_str;
 
     my $vm = decode_json($vm_str);
-    $vm->{status} = $self->redis->get("vm_status:$vm->{name}");
+    $vm->{status}     = $redis->get("vm_status:$vm->{name}");
+    $vm->{public_key} = $redis->get("public_key:$vm->{name}");
     $vm;
 }
 
@@ -260,7 +262,7 @@ sub retrieve_public_key {
     my $vm   = $self->get_vm(%args);
     return unless $vm;
 
-    $self->redis->get("public_key:$vm->{name}");
+    $vm->{public_key};
 }
 
 sub publish_dnsmasq_conf {

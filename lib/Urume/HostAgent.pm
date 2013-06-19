@@ -71,6 +71,7 @@ sub wait_for_events {
                 debugf "message arrival: %s", $message;
                 my ($command, @attr) = split /\t/, $message;
                 $self->invoke_command($command, @attr);
+                $self->report_vm_status;
             }
         );
         $self->{_subscribed} = 1;
