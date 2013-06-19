@@ -5,7 +5,8 @@ use warnings;
 
 our $VERSION = "0.01";
 
-
+use constant VM_STATUS_STOP    => 0;
+use constant VM_STATUS_RUNNING => 1;
 
 1;
 __END__

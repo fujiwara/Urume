@@ -3,6 +3,7 @@ package Urume::Web;
 use strict;
 use warnings;
 use utf8;
+use Urume;
 use Kossy;
 use Config::PL ();
 use JSON;
@@ -100,6 +101,23 @@ post '/vm/info/:name' => [qw/auto/] => sub {
     $vm = $self->storage->get_vm( name => $name );
     $c->render_json($vm);
 };
+
+post '/vm/remove/:name' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+    my $name = $c->args->{name};
+
+    my $vm = $self->storage->get_vm( name => $name );
+    $c->halt(404) unless $vm;
+
+    if ( $vm->{status} == Urume::VM_STATUS_RUNNING ) {
+        warnf "Can't remove active VM: %s status: %d", $vm->{name}, $vm->{status};
+        $c->halt(400);
+    }
+    else {
+        $self->storage->remove( name => $name );
+    }
+};
+
 
 post '/vm/:method/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;

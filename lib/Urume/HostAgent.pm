@@ -2,6 +2,7 @@ package Urume::HostAgent;
 
 use strict;
 use warnings;
+use Urume;
 use Log::Minimal;
 use Redis;
 
@@ -44,7 +45,9 @@ sub report_vm_status {
     for my $r (@result) {
         $r =~ s/^\s+//;
         my ($id, $name, $state) = split /\s+/, $r;
-        my $active = $state eq "running" ? 1 : 0;
+        my $active = $state eq "running"
+                   ? Urume::VM_STATUS_RUNNING
+                   : Urume::VM_STATUS_STOP;
         debugf "reporting vm_status %s %s", $name, $active;
         my $res = $self->{redis_r}->set(
             "vm_status:$name" => $active,

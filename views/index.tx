@@ -23,7 +23,9 @@
       <td><: $vm.name :></td>
       <td><: $vm.ip_addr :></td>
       <td><: $vm.mac_addr :></td>
-      <td><i class="icon-<: $vm.status ? 'ok' : 'minus' :>"></i></td>
+      <td><i class="icon-<: $vm.status == 1 ? 'ok'
+                          : $vm.status == 0 ? 'minus'
+                          :                   'ban-circle' :>"></i></td>
       <td><: $vm.host :></td>
       <td><: $vm.base :></td>
       <td><a href="public_key/<: $vm.name | uri :>"><i class="icon-file"></id></a></td>
