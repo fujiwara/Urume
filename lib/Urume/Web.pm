@@ -114,7 +114,7 @@ post '/vm/remove/:name' => [qw/auto/] => sub {
         $c->halt(400);
     }
     else {
-        $self->storage->remove( name => $name );
+        $self->storage->remove_vm( name => $name );
     }
 };
 

@@ -127,7 +127,9 @@ sub set_vm_status {
     my $name   = shift;
     my $status = shift;
 
-    $self->redis->set("vm_status:$name" => $status);
+    my $key = "vm_status:$name";
+    $self->redis->set($key => $status);
+    $self->redis->expire($key, 300);
 }
 
 sub register_vm {
@@ -171,6 +173,7 @@ sub remove_vm {
     my $host = $vm->{host};
     $self->release_ip_addr( $vm->{ip_addr} );
     $self->redis->del("vm:$name");
+    $self->redis->del("vm_status:$name");
 
     $self->redis->publish(
         "host_events_ch:$host" => "remove\t$name"
