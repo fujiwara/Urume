@@ -5,6 +5,7 @@ dhcp-range=<: $stash.config.dhcp.range.join(",") :>,1h
 
 # vm:<: $vm.name :>
 address=/<: $vm.name :>/<: $vm.ip_addr :>
+address=/<: $vm.name :>.<: $stash.config.dns.domain :>/<: $vm.ip_addr :>
 ptr-record=<: $vm.ip_addr.split('\.').reverse().join(".") :>.in-addr.arpa.,"<: $vm.name :>"
 dhcp-host=<: $vm.mac_addr :>,<: $vm.ip_addr :>
 : }
