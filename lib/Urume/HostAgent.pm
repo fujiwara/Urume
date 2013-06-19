@@ -120,6 +120,12 @@ sub _command_stop {
     $self->_execute_virsh("shutdown", $name);
 }
 
+sub _command_force_stop {
+    my $self = shift;
+    my $name = shift;
+    $self->_execute_virsh("destroy", $name);
+}
+
 sub _command_remove {
     my $self = shift;
     my $name = shift;

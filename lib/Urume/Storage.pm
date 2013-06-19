@@ -203,6 +203,18 @@ sub stop_vm {
     );
 }
 
+sub force_stop_vm {
+    my $self = shift;
+
+    my $vm   = $self->get_vm(@_);
+    my $name = $vm->{name};
+    my $host = $vm->{host};
+
+    $self->redis->publish(
+        "host_events_ch:$host" => "force_stop\t$name"
+    );
+}
+
 sub clone_vm {
     my $self = shift;
 

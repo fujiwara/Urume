@@ -61,6 +61,18 @@ post '/vm/register' => [qw/auto/] => sub {
             qw/ name host base /;
     my $vm = $self->storage->register_vm(@args);
 
+    $self->storage->clone_vm( name => $vm->{name} );
+
+    if ( my $key = $c->req->param("public_key") ) {
+        $self->storage->register_public_key(
+            name => $vm->{name},
+            key  => $key,
+        );
+    }
+    if ( $c->req->param("start") ) {
+        $self->storage->start_vm( name => $vm->{name} );
+    }
+
     $c->render_json($vm);
 };
 
