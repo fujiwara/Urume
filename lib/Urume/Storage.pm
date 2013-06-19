@@ -12,6 +12,8 @@ use List::MoreUtils qw/ any /;
 use Redis;
 use Try::Tiny;
 
+my $NameRegex = qr/\A[a-zA-Z0-9][a-zA-Z0-9\-]+\z/;
+
 has config => (
     is  => "rw",
     isa => "HashRef",
@@ -109,7 +111,7 @@ sub get_vm {
     my $redis = $self->redis;
     my $vm_str;
     if ( my $name = $args{name} ) {
-        croak "invalid name" if $name !~ /\A[a-zA-Z]\w+\z/;
+        croak "invalid name" if $name !~ $NameRegex;
         $vm_str = $redis->get("vm:$name");
     }
     elsif ( $args{ip_addr} ) {
@@ -139,7 +141,7 @@ sub register_vm {
     my %args = @_;
 
     my $name = $args{name};
-    croak "invalid name" if $name !~ /\A[a-zA-Z]\w+\z/;
+    croak "invalid name" if $name !~ $NameRegex;
     my $host = $args{host};
     my @hosts = grep { $_ eq $host } @{ $self->config->{hosts} };
     croak "invalid host"

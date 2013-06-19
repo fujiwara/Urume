@@ -128,4 +128,21 @@ subtest "keyserver" => sub {
     ok ! $storage->retrieve_public_key( name => "testvm3" );
 };
 
+subtest "vm name" => sub {
+    my $vm;
+    try {
+        $vm = $storage->register_vm(
+            name => "test-vm",
+            host => "host01",
+            base => "sl6",
+        );
+    }
+    catch {
+        my $e = $_;
+        note "catch: $e";
+    };
+
+    isa_ok $vm, "HASH";
+};
+
 done_testing;
