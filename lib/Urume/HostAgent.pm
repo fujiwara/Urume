@@ -40,11 +40,11 @@ sub report_vm_status {
     my $self = shift;
 
     local $ENV{LANG} = "C";
-    my @result = grep { /^ *(\d+|-)/ }qx{virsh list --all};
+    my @result = grep { /^ *(\d+|-) / }qx{virsh list --all};
     my $reported = 0;
     for my $r (@result) {
         $r =~ s/^\s+//;
-        my ($id, $name, $state) = split /\s+/, $r;
+        my ($id, $name, $state) = split /\s+/, $r, 3;
         my $active = $state eq "running"
                    ? Urume::VM_STATUS_RUNNING
                    : Urume::VM_STATUS_STOP;
