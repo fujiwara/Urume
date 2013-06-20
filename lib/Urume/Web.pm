@@ -93,8 +93,8 @@ get '/vm/info/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     my $name = $c->args->{name};
 
-    my $vm = $self->storage->get_vm( name => $name );
-    $c->halt(404) unless $vm;
+    my $vm = $self->storage->get_vm( name => $name )
+        or return $self->error( $c => 404, "vm not found" );
 
     $c->render_json($vm);
 };
@@ -103,8 +103,8 @@ post '/vm/info/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     my $name = $c->args->{name};
 
-    my $vm = $self->storage->get_vm( name => $name );
-    $c->halt(404) unless $vm;
+    my $vm = $self->storage->get_vm( name => $name )
+        or $self->error( $c => 404, "vm not found" );
 
     $self->storage->set_vm_status(
         $name => $c->req->param("active") ? 1 : 0,
@@ -118,12 +118,12 @@ post '/vm/remove/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     my $name = $c->args->{name};
 
-    my $vm = $self->storage->get_vm( name => $name );
-    $c->halt(404) unless $vm;
+    my $vm = $self->storage->get_vm( name => $name )
+        or $self->error( $c, 404, "vm not found" );
 
     if ( $vm->{status} == Urume::VM_STATUS_RUNNING ) {
         warnf "Can't remove active VM: %s status: %d", $vm->{name}, $vm->{status};
-        $c->halt(400);
+        return $self->error( $c, 400, "vm is running" );
     }
     else {
         $self->storage->remove_vm( name => $name );
@@ -137,14 +137,14 @@ post '/vm/:method/:name' => [qw/auto/] => sub {
     my $name   = $c->args->{name};
     my $method = sprintf "%s_vm", $c->args->{method};
 
-    my $vm = $self->storage->get_vm( name => $name );
-    $c->halt(404) unless $vm;
+    my $vm = $self->storage->get_vm( name => $name )
+        or return $self->error( $c, 404, "vm not found" );
 
     if ($self->storage->can($method)) {
         $self->storage->$method( name => $name );
     }
     else {
-        $c->halt(404);
+        return $self->error( $c, 404, "method not found" );
     }
     $c->render_json({ ok => JSON::true });
 };
@@ -153,8 +153,8 @@ get '/public_key' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
     my $ip_addr = $c->req->address;
-    my $key    = $self->storage->retrieve_public_key( ip_addr => $ip_addr );
-    $c->halt(404) unless $key;
+    my $key     = $self->storage->retrieve_public_key( ip_addr => $ip_addr )
+        or return $self->error( $c, 404, "public_key not found" );
 
     $c->res->content_type("text/plain; charset=utf8");
     $c->res->body($key);
@@ -164,8 +164,8 @@ get '/public_key' => [qw/auto/] => sub {
 get '/public_key/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my $key = $self->storage->retrieve_public_key( name => $c->args->{name} );
-    $c->halt(404) unless $key;
+    my $key = $self->storage->retrieve_public_key( name => $c->args->{name} )
+        or return $self->error( $c, 404, "public_key not found" );
 
     $c->res->content_type("text/plain; charset=utf8");
     $c->res->body($key);
@@ -175,8 +175,8 @@ get '/public_key/:name' => [qw/auto/] => sub {
 post '/public_key/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my $key = $c->req->param('key');
-    $c->halt(400) unless defined $key;
+    my $key = $c->req->param('key')
+        or return $self->error( $c, 400, "key is required" );
 
     infof "register public key %s: %s", $c->args->{name}, $key;
     $self->storage->register_public_key(
@@ -218,6 +218,14 @@ sub storage {
     my $self = shift;
     $self->{_storage} = $_[0] if @_;
     $self->{_storage};
+}
+
+sub error {
+    my $self = shift;
+    my ($c, $code, $message) = @_;
+    $c->render_json({ ok => JSON::false, message => $message });
+    $c->res->status($code);
+    $c->res;
 }
 
 1;
