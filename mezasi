@@ -35,6 +35,12 @@ sub _list {
     pp($res);
 }
 
+sub _config {
+    my $url = $endpoint . "config";
+    my $res = $ua->request(GET $url);
+    pp($res);
+}
+
 sub _info {
     my $name = shift @ARGV;
     usage("info") if !defined $name;
@@ -117,7 +123,7 @@ sub usage {
         say "$0 $type vmname";
     }
     else {
-        say "$0 (list|info|register|start|stop|force_stop|remove|public_key)";
+        say "$0 (list|info|register|start|stop|force_stop|remove|public_key|config)";
     }
     print "\n";
     exit 1;
