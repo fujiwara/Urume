@@ -141,6 +141,9 @@ sub register_vm {
     my $self = shift;
     my %args = @_;
 
+    my $vm = $self->get_vm(@_);
+    croak "already exists" if $vm;
+
     my $name = $args{name};
     croak "invalid name" if $name !~ $NameRegex;
     my $host = $args{host};

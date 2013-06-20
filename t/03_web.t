@@ -61,6 +61,15 @@ subtest_psgi "/vm/register", $app, sub {
     like $vm->{id}, qr/^\d+$/;
     like $vm->{mac_addr}, qr/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/;
     $newvm = $vm;
+
+    # duplicate
+    $req = POST "http://localhost/vm/register",
+                   [ name       => "testvm",
+                     base       => "centos6",
+                     public_key => "ssh-rsa AAAAxxxx",
+                   ];
+    $res = $cb->($req);
+    is $res->code, 500;
 };
 
 subtest_psgi "vm/(list|info)", $app, sub {

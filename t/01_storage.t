@@ -146,4 +146,20 @@ subtest "vm name" => sub {
     isa_ok $vm, "HASH";
 };
 
+subtest "vm dup register" => sub {
+    my $vm;
+    try {
+        $vm = $storage->register_vm(
+            name => "test-vm",
+            host => "host01",
+            base => "sl6",
+        );
+    }
+    catch {
+        my $e = $_;
+        note "catch: $e";
+        like $e => qr/exists/;
+    };
+};
+
 done_testing;
