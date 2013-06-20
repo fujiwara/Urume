@@ -7,6 +7,8 @@ our $VERSION = "0.01";
 
 use constant VM_STATUS_STOP    => 0;
 use constant VM_STATUS_RUNNING => 1;
+use constant VM_STATUS_EXPIRES => 60;
+use constant VM_STATUS_REFRESH => 10;
 
 1;
 __END__

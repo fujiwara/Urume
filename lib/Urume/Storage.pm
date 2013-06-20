@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use 5.12.0;
 use Mouse;
+use Urume;
 use Log::Minimal;
 use Net::IP;
 use Carp;
@@ -133,7 +134,7 @@ sub set_vm_status {
 
     my $key = "vm_status:$name";
     $self->redis->set($key => $status);
-    $self->redis->expire($key, 300);
+    $self->redis->expire($key, Urume::VM_STATUS_EXPIRES);
 }
 
 sub register_vm {

@@ -16,7 +16,7 @@ sub new {
         redis      => $config->{redis},
         images_dir => $config->{images_dir} || "/var/lib/libvirt/images",
         host       => $config->{host}       || do { my $host = qx{ hostname -s }; chomp $host; $host },
-        timeout    => $config->{timeout}    || 30,
+        timeout    => $config->{timeout}    || Urume::VM_STATUS_REFRESH,
     };
     infof "%s created: %s", $class, ddf $self;
 
@@ -40,19 +40,21 @@ sub report_vm_status {
     my $self = shift;
 
     local $ENV{LANG} = "C";
-    my @result = grep { /^ *(\d+|-) / }qx{virsh list --all};
+    my @result = grep { /^ *(\d+|-) / } qx{virsh list --all};
     my $reported = 0;
     for my $r (@result) {
         $r =~ s/^\s+//;
+        $r =~ s/\s+$//;
         my ($id, $name, $state) = split /\s+/, $r, 3;
+        debugf ddf([$id, $name, $state]);
         my $active = $state eq "running"
                    ? Urume::VM_STATUS_RUNNING
                    : Urume::VM_STATUS_STOP;
         debugf "reporting vm_status %s %s", $name, $active;
-        my $res = $self->{redis_r}->set(
-            "vm_status:$name" => $active,
-        );
+        my $key = "vm_status:$name";
+        my $res = $self->{redis_r}->set($key => $active);
         $reported++ if $res;
+        $self->{redis_r}->expire($key, Urume::VM_STATUS_EXPIRES);
     }
     $reported;
 }
