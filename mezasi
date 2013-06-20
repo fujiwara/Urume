@@ -1,0 +1,137 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use 5.12.0;
+use Config::Pit;
+use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
+use LWP::UserAgent;
+use HTTP::Request::Common;
+use JSON;
+use Encode;
+use Path::Class qw/ file /;
+
+my $command = shift;
+my $config = pit_get("urume.config", require => {
+    endpoint => "Urume API endpoint",
+});
+my $ua = LWP::UserAgent->new( agent => "Mezasi/0.1" );
+my $endpoint = $config->{endpoint};
+$endpoint .= "/" if $endpoint !~ m{/$};
+warn "endpoint: $endpoint\n";
+
+usage() unless defined $command;
+if ( my $func = main->can("_$command") ) {
+    warn "command: $command\n";
+    $func->();
+}
+else {
+    usage();
+}
+exit;
+
+sub _list {
+    my $url = $endpoint . "vm/list";
+    my $res = $ua->request(GET $url);
+    pp($res);
+}
+
+sub _info {
+    my $name = shift @ARGV;
+    usage("info") if !defined $name;
+
+    my $url = $endpoint . "vm/info/$name";
+    my $res = $ua->request(GET $url);
+    pp($res);
+}
+
+sub _start {
+    my $name = shift @ARGV;
+    usage("start") if !defined $name;
+    my $url = $endpoint . "vm/start/$name";
+    my $res = $ua->request(POST $url);
+    pp($res);
+}
+
+sub _stop {
+    my $name = shift @ARGV;
+    usage("start") if !defined $name;
+    my $url = $endpoint . "vm/stop/$name";
+    my $res = $ua->request(POST $url);
+    pp($res);
+}
+
+sub _force_stop {
+    my $name = shift @ARGV;
+    usage("start") if !defined $name;
+    my $url = $endpoint . "vm/force_stop/$name";
+    my $res = $ua->request(POST $url);
+    pp($res);
+}
+
+sub _remove {
+    my $name = shift @ARGV;
+    usage("start") if !defined $name;
+    my $url = $endpoint . "vm/remove/$name";
+    my $res = $ua->request(POST $url);
+    pp($res);
+}
+
+sub _register {
+    my ($public_key, $name, $base);
+    GetOptions(
+        "public-key|k=s" => \$public_key,
+        "name|n=s"       => \$name,
+        "base|b=s"       => \$base,
+    );
+    my $url = $endpoint . "vm/register";
+    usage("register") if !defined $base || !defined $name;
+
+    my $key = file($public_key)->slurp;
+    my $res = $ua->request(POST $url, [ name => $name, base => $base, public_key => $key ]);
+    pp($res);
+};
+
+sub _public_key {
+    my $name = shift @ARGV;
+    my $file = shift @ARGV;
+    usage("public_key") if !defined $name || !defined $file;
+
+    my $url = $endpoint . "public_key/$name";
+
+    my $key = file($file)->slurp;
+    my $res = $ua->request(POST $url, [ key => $key ]);
+    pp($res);
+};
+
+sub usage {
+    my $type = shift;
+    say "Usage";
+    $type //= "";
+    if ( $type eq "register" ) {
+        say "$0 register --name vmname --base baseimage --public-key ~/.ssh/id_rsa.pub";
+    }
+    elsif ( $type eq "public_key" ) {
+        say "$0 public_key vmname ~/.ssh/id_rsa.pub";
+    }
+    elsif ( $type eq "start" || $type eq "stop" || $type eq "force_stop" || $type eq "remove" ) {
+        say "$0 $type vmname";
+    }
+    else {
+        say "$0 (list|info|register|start|stop|force_stop|remove|public_key)";
+    }
+    print "\n";
+    exit 1;
+}
+
+sub pp {
+    my $res = shift;
+
+    warn $res->status_line . "\n";
+    if ($res->content_type =~ /json/) {
+        my $obj = decode_json($res->content);
+        print JSON->new->pretty->encode($obj);
+    }
+    else {
+        print $res->content;
+    }
+}
