@@ -5,6 +5,11 @@ use warnings;
 use Test::More;
 use Redis;
 use Test::RedisServer;
+use Plack::Test;
+use Net::CIDR::Lite;
+use Exporter 'import';
+use Log::Minimal ();
+our @EXPORT_OK = qw/ subtest_psgi /;
 
 our $redis_server;
 
@@ -26,5 +31,15 @@ sub config {
     };
 }
 
+sub cidr {
+    Net::CIDR::Lite->new("192.168.0.64/26");
+}
+
+sub subtest_psgi {
+    my ($name, $app, $client) = @_;
+    subtest $name, sub {
+        Plack::Test::test_psgi( app => $app, client => $client );
+    };
+}
 
 1;
