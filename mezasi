@@ -29,15 +29,23 @@ else {
 }
 exit;
 
+sub url($) {
+    my $path = shift;
+    $endpoint . $path;
+}
+
+sub request($) {
+    $ua->request(shift);
+}
+
 sub _list {
-    my $url = $endpoint . "vm/list";
-    my $res = $ua->request(GET $url);
+    my $res = $ua->request(GET url "vm/list");
     pp($res);
 }
 
 sub _config {
     my $url = $endpoint . "config";
-    my $res = $ua->request(GET $url);
+    my $res = request(GET url "config");
     pp($res);
 }
 
@@ -45,40 +53,35 @@ sub _info {
     my $name = shift @ARGV;
     usage("info") if !defined $name;
 
-    my $url = $endpoint . "vm/info/$name";
-    my $res = $ua->request(GET $url);
+    my $res = request(GET url "vm/info/$name");
     pp($res);
 }
 
 sub _start {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $url = $endpoint . "vm/start/$name";
-    my $res = $ua->request(POST $url);
+    my $res = request(POST url "vm/start/$name");
     pp($res);
 }
 
 sub _stop {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $url = $endpoint . "vm/stop/$name";
-    my $res = $ua->request(POST $url);
+    my $res = request(POST url "vm/stop/$name");
     pp($res);
 }
 
 sub _force_stop {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $url = $endpoint . "vm/force_stop/$name";
-    my $res = $ua->request(POST $url);
+    my $res = request(POST url "vm/force_stop/$name");
     pp($res);
 }
 
 sub _remove {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $url = $endpoint . "vm/remove/$name";
-    my $res = $ua->request(POST $url);
+    my $res = request(POST url "vm/remove/$name");
     pp($res);
 }
 
@@ -89,11 +92,11 @@ sub _register {
         "name|n=s"       => \$name,
         "base|b=s"       => \$base,
     );
-    my $url = $endpoint . "vm/register";
+    my $url = url "vm/register";
     usage("register") if !defined $base || !defined $name;
 
     my $key = file($public_key)->slurp;
-    my $res = $ua->request(POST $url, [ name => $name, base => $base, public_key => $key ]);
+    my $res = request(POST $url, [ name => $name, base => $base, public_key => $key ]);
     pp($res);
 };
 
@@ -102,10 +105,10 @@ sub _public_key {
     my $file = shift @ARGV;
     usage("public_key") if !defined $name || !defined $file;
 
-    my $url = $endpoint . "public_key/$name";
+    my $url = url "public_key/$name";
 
     my $key = file($file)->slurp;
-    my $res = $ua->request(POST $url, [ key => $key ]);
+    my $res = request(POST $url, [ key => $key ]);
     pp($res);
 };
 
@@ -119,7 +122,7 @@ sub usage {
     elsif ( $type eq "public_key" ) {
         say "$0 public_key vmname ~/.ssh/id_rsa.pub";
     }
-    elsif ( $type eq "start" || $type eq "stop" || $type eq "force_stop" || $type eq "remove" ) {
+    elsif ( $type =~ /(start|stop|force_stop|remove|info)/ ) {
         say "$0 $type vmname";
     }
     else {
