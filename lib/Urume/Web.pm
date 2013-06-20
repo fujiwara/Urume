@@ -10,6 +10,7 @@ use JSON;
 use Net::IP;
 use Log::Minimal;
 use Urume::Storage;
+use List::Util qw/ shuffle first /;
 
 filter 'auto' => sub {
     my $app = shift;
@@ -57,10 +58,13 @@ get '/dnsmasq.conf' => [qw/auto/] => sub {
 post '/vm/register' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my @args
+    my %args
         = map { $_ => scalar $c->req->param($_) }
             qw/ name host base /;
-    my $vm = $self->storage->register_vm(@args);
+    if (!$args{host}) {
+        $args{host} = first { 1 } shuffle @{ $self->config->{hosts} };
+    }
+    my $vm = $self->storage->register_vm(%args);
 
     $self->storage->clone_vm( name => $vm->{name} );
 
@@ -70,11 +74,12 @@ post '/vm/register' => [qw/auto/] => sub {
             key  => $key,
         );
     }
-    if ( $c->req->param("start") ) {
-        $self->storage->start_vm( name => $vm->{name} );
-    }
+    $self->storage->start_vm( name => $vm->{name} );
 
+    $vm = $self->storage->get_vm( name => $vm->{name} );
     $c->render_json($vm);
+    $c->res->status(201);
+    $c->res;
 };
 
 get '/vm/list' => [qw/auto/] => sub {
@@ -123,6 +128,7 @@ post '/vm/remove/:name' => [qw/auto/] => sub {
     else {
         $self->storage->remove_vm( name => $name );
     }
+    $c->render_json({ ok => JSON::true });
 };
 
 
@@ -140,6 +146,7 @@ post '/vm/:method/:name' => [qw/auto/] => sub {
     else {
         $c->halt(404);
     }
+    $c->render_json({ ok => JSON::true });
 };
 
 get '/public_key' => [qw/auto/] => sub {

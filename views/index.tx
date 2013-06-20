@@ -55,10 +55,9 @@
 POST <: $c.req.uri_for('/vm/register') :>
 parameters: [*] required
   name: VM name [*]
-  host: VM host (hostagent is running) [*]
   base: Base vm name (virt-clone -o $base -n $name) [*]
+  host: VM host (hostagent is running)
   public_key: public key for VM
-  start: 0 or 1
 </pre>
 
 <h3>Get VM info</h3>
