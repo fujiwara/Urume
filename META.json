@@ -43,8 +43,13 @@
       "runtime" : {
          "requires" : {
             "Config::PL" : "0",
+            "HTTP::Request::Common" : "0",
+            "JSON" : "0",
             "Kossy" : "0",
+            "LWP::UserAgent" : "0",
             "Net::IP" : "0",
+            "Path::Class" : "0",
+            "Plack" : "0",
             "Proclet" : "0",
             "Redis" : "0",
             "perl" : "5.008005"
@@ -60,5 +65,16 @@
       }
    },
    "release_status" : "unstable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/fujiwara/Urume/issues"
+      },
+      "homepage" : "https://github.com/fujiwara/Urume",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/fujiwara/Urume.git",
+         "web" : "https://github.com/fujiwara/Urume"
+      }
+   },
    "version" : "0.01"
 }
