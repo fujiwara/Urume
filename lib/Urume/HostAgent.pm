@@ -40,7 +40,7 @@ sub report_vm_status {
     my $self = shift;
 
     local $ENV{LANG} = "C";
-    my @result = grep { /^ +(\d+|-)/ }qx{virsh list --all};
+    my @result = grep { /^ *(\d+|-)/ }qx{virsh list --all};
     my $reported = 0;
     for my $r (@result) {
         $r =~ s/^\s+//;
