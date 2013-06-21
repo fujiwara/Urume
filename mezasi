@@ -7,7 +7,6 @@ use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 use LWP::UserAgent;
 use HTTP::Request::Common;
 use JSON;
-use Encode;
 use Path::Class qw/ file /;
 
 my $command = shift;
@@ -38,51 +37,57 @@ sub request($) {
     $ua->request(shift);
 }
 
+sub pp($) {
+    my $res = shift;
+
+    warn $res->status_line . "\n";
+    if ($res->content_type =~ /json/) {
+        my $obj = decode_json($res->content);
+        print JSON->new->pretty->encode($obj);
+    }
+    else {
+        print $res->content;
+    }
+}
+
 sub _list {
-    my $res = $ua->request(GET url "vm/list");
-    pp($res);
+    pp request GET url "vm/list";
 }
 
 sub _config {
     my $url = $endpoint . "config";
-    my $res = request(GET url "config");
-    pp($res);
+    pp request GET url "config";
 }
 
 sub _info {
     my $name = shift @ARGV;
     usage("info") if !defined $name;
 
-    my $res = request(GET url "vm/info/$name");
-    pp($res);
+    pp request GET url "vm/info/$name";
 }
 
 sub _start {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $res = request(POST url "vm/start/$name");
-    pp($res);
+    pp request POST url "vm/start/$name";
 }
 
 sub _stop {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $res = request(POST url "vm/stop/$name");
-    pp($res);
+    pp request POST url "vm/stop/$name";
 }
 
 sub _force_stop {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $res = request(POST url "vm/force_stop/$name");
-    pp($res);
+    pp request POST url "vm/force_stop/$name";
 }
 
 sub _remove {
     my $name = shift @ARGV;
     usage("start") if !defined $name;
-    my $res = request(POST url "vm/remove/$name");
-    pp($res);
+    pp request POST url "vm/remove/$name";
 }
 
 sub _register {
@@ -96,8 +101,7 @@ sub _register {
     usage("register") if !defined $base || !defined $name;
 
     my $key = file($public_key)->slurp;
-    my $res = request(POST $url, [ name => $name, base => $base, public_key => $key ]);
-    pp($res);
+    pp request(POST $url, [ name => $name, base => $base, public_key => $key ]);
 };
 
 sub _public_key {
@@ -106,10 +110,8 @@ sub _public_key {
     usage("public_key") if !defined $name || !defined $file;
 
     my $url = url "public_key/$name";
-
     my $key = file($file)->slurp;
-    my $res = request(POST $url, [ key => $key ]);
-    pp($res);
+    pp request(POST $url, [ public_key => $key ]);
 };
 
 sub usage {
@@ -132,15 +134,3 @@ sub usage {
     exit 1;
 }
 
-sub pp {
-    my $res = shift;
-
-    warn $res->status_line . "\n";
-    if ($res->content_type =~ /json/) {
-        my $obj = decode_json($res->content);
-        print JSON->new->pretty->encode($obj);
-    }
-    else {
-        print $res->content;
-    }
-}
