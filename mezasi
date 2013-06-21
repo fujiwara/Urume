@@ -34,13 +34,17 @@ sub url($) {
 }
 
 sub request($) {
-    $ua->request(shift);
+    my $req = shift;
+    warn $req->as_string if $ENV{DEBUG};
+    $ua->request($req);
 }
 
 sub pp($) {
     my $res = shift;
 
     warn $res->status_line . "\n";
+    warn $res->as_string if $ENV{DEBUG};
+
     if ($res->content_type =~ /json/) {
         my $obj = decode_json($res->content);
         print JSON->new->pretty->encode($obj);
@@ -102,7 +106,7 @@ sub _register {
 
     my $key = file($public_key)->slurp;
     pp request(POST $url, [ name => $name, base => $base, public_key => $key ]);
-};
+}
 
 sub _public_key {
     my $name = shift @ARGV;
@@ -112,7 +116,23 @@ sub _public_key {
     my $url = url "public_key/$name";
     my $key = file($file)->slurp;
     pp request(POST $url, [ public_key => $key ]);
-};
+}
+
+sub _ssh {
+    my $name = shift @ARGV;
+    usage("ssh") if !defined $name;
+
+    my $res = request GET url "vm/info/$name";
+    if ( $res->code == 200 ) {
+        my $vm  = decode_json($res->content);
+        my @command = ("ssh", $vm->{ip_addr}, @ARGV);
+        print "@command\n";
+        exec @command;
+    }
+    else {
+        pp($res);
+    }
+}
 
 sub usage {
     my $type = shift;
@@ -124,11 +144,14 @@ sub usage {
     elsif ( $type eq "public_key" ) {
         say "$0 public_key vmname ~/.ssh/id_rsa.pub";
     }
-    elsif ( $type =~ /(start|stop|force_stop|remove|info)/ ) {
+    elsif ( $type =~ /^(start|stop|force_stop|remove|info)$/ ) {
         say "$0 $type vmname";
     }
+    elsif ( $type eq "ssh" ) {
+        say "$0 ssh vmname [ssh options]";
+    }
     else {
-        say "$0 (list|info|register|start|stop|force_stop|remove|public_key|config)";
+        say "$0 (list|info|register|start|stop|force_stop|remove|public_key|config|ssh)";
     }
     print "\n";
     exit 1;
