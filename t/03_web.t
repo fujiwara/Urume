@@ -91,5 +91,27 @@ subtest_psgi "vm/(list|info)", $app, sub {
     is_deeply $vms => [ $newvm ];
 };
 
+subtest_psgi "/public_key", $app, sub {
+    my $cb  = shift;
+    my ($req, $res);
+
+    $res = $cb->(GET "http://localhost/public_key/testvm");
+    is $res->code, 200;
+    is $res->content_type, "text/plain";
+    is $res->content, "ssh-rsa AAAAxxxx";
+
+    $req = POST "http://localhost/public_key/testvm",
+                   [ public_key => "ssh-rsa AAAAyyyy" ];
+    $res = $cb->($req);
+    is $res->code, 200;
+    my $r = decode_json($res->content);
+    isa_ok $r, "HASH";
+    ok $r->{ok};
+
+    $res = $cb->(GET "http://localhost/public_key/testvm");
+    is $res->code, 200;
+    is $res->content_type, "text/plain";
+    is $res->content, "ssh-rsa AAAAyyyy";
+};
 
 done_testing;

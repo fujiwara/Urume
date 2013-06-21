@@ -175,8 +175,8 @@ get '/public_key/:name' => [qw/auto/] => sub {
 post '/public_key/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my $key = $c->req->param('key')
-        or return $self->error( $c, 400, "key is required" );
+    my $key = $c->req->param('public_key')
+        or return $self->error( $c, 400, "param public_key is required" );
 
     infof "register public key %s: %s", $c->args->{name}, $key;
     $self->storage->register_public_key(
