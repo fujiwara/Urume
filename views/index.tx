@@ -58,6 +58,7 @@ parameters: [*] required
   base: Base vm name (virt-clone -o $base -n $name) [*]
   host: VM host (hostagent is running)
   public_key: public key for VM
+  user_data: user_data
 </pre>
 
 <h3>Get VM info</h3>
@@ -117,6 +118,25 @@ Retieve public key by request IP address.
 <h3>Retrieve public key for VM</h3>
 <pre>
 GET <: $c.req.uri_for('/public_key/') :>{name}
+</pre>
+
+<h3>Register user data for VM</h3>
+<pre>
+POST <: $c.req.uri_for('/user_data/') :>{name}
+parameters:
+  user_data: user data string
+</pre>
+
+<h3>Retrieve user data</h3>
+<pre>
+GET <: $c.req.uri_for('/user_data') :>
+</pre>
+
+Retieve user data by request IP address.
+
+<h3>Retrieve user data for VM</h3>
+<pre>
+GET <: $c.req.uri_for('/user_data/') :>{name}
 </pre>
 
 <h3>Get dnsmasq.conf</h3>

@@ -45,16 +45,20 @@ my $newvm;
 subtest_psgi "/vm/register", $app, sub {
     my $cb  = shift;
     my $req = POST "http://localhost/vm/register",
-                   [ name       => "testvm",
-                     base       => "centos6",
-                     public_key => "ssh-rsa AAAAxxxx",
-                   ];
+              Content_Type => "form-data",
+              Content => [
+                  name       => "testvm",
+                  base       => "centos6",
+                  public_key => "ssh-rsa AAAAxxxx",
+                  user_data  => "#!/bin/sh\necho 'hello world'\n",
+              ];
     my $res = $cb->($req);
     is $res->code, 201;
     my $vm = decode_json($res->content);
     is $vm->{name} => "testvm";
     is $vm->{base} => "centos6";
     is $vm->{public_key} => "ssh-rsa AAAAxxxx";
+
     ok exists $vm->{status};
     ok any { $_ eq $vm->{host} } @{$config->{hosts}};
     ok $cidr->find($vm->{ip_addr});
@@ -64,10 +68,12 @@ subtest_psgi "/vm/register", $app, sub {
 
     # duplicate
     $req = POST "http://localhost/vm/register",
-                   [ name       => "testvm",
-                     base       => "centos6",
-                     public_key => "ssh-rsa AAAAxxxx",
-                   ];
+               Content_Type => "form-data",
+               Content => [
+                   name       => "testvm",
+                   base       => "centos6",
+                   public_key => "ssh-rsa AAAAxxxx",
+               ];
     $res = $cb->($req);
     is $res->code, 500;
 };
@@ -112,6 +118,32 @@ subtest_psgi "/public_key", $app, sub {
     is $res->code, 200;
     is $res->content_type, "text/plain";
     is $res->content, "ssh-rsa AAAAyyyy";
+};
+
+subtest_psgi "/user_data", $app, sub {
+    my $cb  = shift;
+    my ($req, $res);
+
+    $res = $cb->(GET "http://localhost/user_data/testvm");
+    is $res->code, 200;
+    is $res->content_type, "text/plain";
+    is $res->content, "#!/bin/sh\necho 'hello world'\n";
+
+    $req = POST "http://localhost/user_data/testvm",
+               Content_Type => "form-data",
+               Content => [
+                   user_data => "#!/bin/sh\necho 'HELLO WORLD'\n",
+               ];
+    $res = $cb->($req);
+    is $res->code, 200;
+    my $r = decode_json($res->content);
+    isa_ok $r, "HASH";
+    ok $r->{ok};
+
+    $res = $cb->(GET "http://localhost/user_data/testvm");
+    is $res->code, 200;
+    is $res->content_type, "text/plain";
+    is $res->content, "#!/bin/sh\necho 'HELLO WORLD'\n";
 };
 
 done_testing;

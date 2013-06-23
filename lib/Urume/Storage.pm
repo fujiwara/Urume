@@ -26,7 +26,7 @@ has redis => (
     lazy => 1,
     default => sub {
         my $self = shift;
-        infof "connect to redis: %s", ddf $self->config->{redis};
+        debugf "connect to redis: %s", ddf $self->config->{redis};
         Redis->new(%{ $self->config->{redis} });
     },
 );
@@ -98,7 +98,9 @@ sub list_vm {
     my $redis = $self->redis;
     my @vmname = $redis->keys("vm:*")
         or return;
-    my @vm = map { decode_json $_ } $redis->mget( $redis->keys("vm:*") );
+    my @vm = sort { $a->{id} <=> $b->{id} }
+             map { decode_json $_ }
+             $redis->mget( $redis->keys("vm:*") );
     for my $vm (@vm) {
         $vm->{status}     = $redis->get("vm_status:$vm->{name}");
         $vm->{public_key} = $redis->get("public_key:$vm->{name}");
@@ -133,8 +135,11 @@ sub set_vm_status {
     my $status = shift;
 
     my $key = "vm_status:$name";
-    $self->redis->set($key => $status);
-    $self->redis->expire($key, Urume::VM_STATUS_EXPIRES);
+    my $redis = $self->redis;
+    $redis->multi;
+    $redis->set($key => $status);
+    $redis->expire($key, Urume::VM_STATUS_EXPIRES);
+    $redis->exec;
 }
 
 sub register_vm {
@@ -269,6 +274,23 @@ sub retrieve_public_key {
     return unless $vm;
 
     $vm->{public_key};
+}
+
+sub register_user_data {
+    my $self = shift;
+    my %args = @_;
+    my $vm   = $self->get_vm(%args);
+
+    $self->redis->set("user_data:$vm->{name}" => $args{data});
+}
+
+sub retrieve_user_data {
+    my $self = shift;
+    my %args = @_;
+    my $vm   = $self->get_vm(%args);
+    return unless $vm;
+
+    $self->redis->get("user_data:$vm->{name}");
 }
 
 sub publish_dnsmasq_conf {

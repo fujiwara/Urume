@@ -105,7 +105,15 @@ sub _register {
     usage("register") if !defined $base || !defined $name;
 
     my $key = file($public_key)->slurp;
-    pp request(POST $url, [ name => $name, base => $base, public_key => $key ]);
+    pp request(
+        POST $url,
+        Content_Type => "form-data",
+        Content => [
+            name => $name,
+            base => $base,
+            public_key => $key,
+        ]
+    );
 }
 
 sub _public_key {
@@ -115,7 +123,13 @@ sub _public_key {
 
     my $url = url "public_key/$name";
     my $key = file($file)->slurp;
-    pp request(POST $url, [ public_key => $key ]);
+    pp request(
+        POST $url,
+        Content_Type => "form-data",
+        Content => [
+            public_key => $key,
+        ]
+    );
 }
 
 sub _ssh {

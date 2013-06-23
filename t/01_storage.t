@@ -129,6 +129,27 @@ subtest "keyserver" => sub {
     ok ! $storage->retrieve_public_key( name => "testvm3" );
 };
 
+subtest "user_data" => sub {
+    my $vm = $storage->register_vm(
+        name => "testvm3",
+        host => "host01",
+        base => "sl6",
+    );
+    my $ip = $vm->{ip_addr};
+
+    ok $storage->register_user_data(
+        name => "testvm3",
+        data => "#!/bin/sh\necho 'hello world'\n",
+    );
+    my $data = $storage->retrieve_user_data( name => "testvm3" );
+    is $data => "#!/bin/sh\necho 'hello world'\n";
+
+    $data = $storage->retrieve_user_data( ip_addr => $ip );
+    is $data => "#!/bin/sh\necho 'hello world'\n";
+
+    ok ! $storage->retrieve_user_data( name => "testvm4" );
+};
+
 subtest "vm name" => sub {
     my $vm;
     try {

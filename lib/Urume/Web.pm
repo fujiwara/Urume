@@ -74,6 +74,13 @@ post '/vm/register' => [qw/auto/] => sub {
             key  => $key,
         );
     }
+    if ( my $data = $c->req->param("user_data") ) {
+        $self->storage->register_user_data(
+            name => $vm->{name},
+            data => $data,
+        );
+    }
+
     $self->storage->start_vm( name => $vm->{name} );
 
     $vm = $self->storage->get_vm( name => $vm->{name} );
@@ -182,6 +189,42 @@ post '/public_key/:name' => [qw/auto/] => sub {
     $self->storage->register_public_key(
         name => $c->args->{name},
         key  => $key,
+    );
+    $c->render_json({ ok => JSON::true });
+};
+
+get '/user_data' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my $ip_addr = $c->req->address;
+    my $key     = $self->storage->retrieve_user_data( ip_addr => $ip_addr )
+        or return $self->error( $c, 404, "user_data not found" );
+
+    $c->res->content_type("text/plain");
+    $c->res->body($key);
+    $c->res;
+};
+
+get '/user_data/:name' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my $key = $self->storage->retrieve_user_data( name => $c->args->{name} )
+        or return $self->error( $c, 404, "user_data not found" );
+
+    $c->res->content_type("text/plain");
+    $c->res->body($key);
+    $c->res;
+};
+
+post '/user_data/:name' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my $data = $c->req->param('user_data')
+        or return $self->error( $c, 400, "param user_data is required" );
+
+    $self->storage->register_user_data(
+        name => $c->args->{name},
+        data => $data,
     );
     $c->render_json({ ok => JSON::true });
 };
