@@ -183,7 +183,12 @@ sub register_vm {
         unless @hosts;
 
     my $base = $args{base};
-    unless ( grep { $_ eq $base } @{ $self->config->{base_images} } ) {
+    my @bases = @{ $self->config->{base_images} };
+    push @bases, grep {
+        defined($_->{status}) && $_->{status} == Urume::VM_STATUS_STOP
+    } $self->list_vm;
+
+    unless ( grep { $_ eq $base } @bases ) {
         croak "invalid base image";
     }
 
