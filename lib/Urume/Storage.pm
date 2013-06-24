@@ -77,8 +77,27 @@ sub get_ip_addr_from_pool {
     my %args = @_;
 
     my $redis = $self->redis;
-    my $ip = $redis->spop("ip_addr_pool") || croak("no ip_addr in pool");
+    my $ip;
+    my @locked;
+    try {
+        while (1) {
+            $ip = $redis->spop("ip_addr_pool") || croak("no ip_addr in pool");
+            if ( $redis->get("locked_ip_addr:$ip") ) {
+                push @locked, $ip;
+                next;
+            }
+            last;
+        }
+    }
+    catch {
+        my $e = $_;
+        croak $e;
+    }
+    finally {
+        $redis->sadd("ip_addr_pool", @locked) if @locked;
+    };
     $redis->hset("leased_ip_addr", $ip => $args{to} // "");
+
     return $ip;
 }
 
@@ -89,6 +108,13 @@ sub release_ip_addr {
     my $redis = $self->redis;
     $redis->multi;
     $redis->hdel("leased_ip_addr", $ip);
+
+    # lease_time が経過するまでは再利用されないようにlockしておく
+    $redis->set("locked_ip_addr:$ip" => "locked");
+    $redis->expire(
+        "locked_ip_addr:$ip",
+        $self->config->{dhcp}->{lease_time} || 0
+    );
     $redis->sadd("ip_addr_pool", $ip);
     $redis->exec;
 }

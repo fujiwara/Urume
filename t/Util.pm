@@ -24,7 +24,8 @@ sub config {
     +{
         mac_address_base => 13128,
         dhcp => {
-            range => ["192.168.0.64", "192.168.0.127"],
+            range      => ["192.168.0.64", "192.168.0.127"],
+            lease_time => 2,
         },
         hosts => ["host01", "host02", "localhost"],
         base_images => ["centos6", "sl6"],

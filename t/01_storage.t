@@ -61,10 +61,6 @@ subtest "release_ip_addr" => sub {
     ok $storage->release_ip_addr("192.168.0.100");
     ok $storage->release_ip_addr("192.168.0.101");
     ok $storage->release_ip_addr("192.168.0.102");
-    for ( 1 .. 3 ) {
-        my $addr = $storage->get_ip_addr_from_pool;
-        like $addr, qr/^192\.168\.0\.10[012]$/;
-    }
     try {
         my $addr = $storage->get_ip_addr_from_pool();
     }
@@ -72,6 +68,11 @@ subtest "release_ip_addr" => sub {
         my $e = $_;
         ok $e;
     };
+    sleep $storage->config->{dhcp}->{lease_time} + 1;
+    for ( 1 .. 3 ) {
+        my $addr = $storage->get_ip_addr_from_pool;
+        like $addr, qr/^192\.168\.0\.10[012]$/;
+    }
 };
 
 subtest "re init" => sub {
