@@ -42,17 +42,14 @@ sub request($) {
 sub pp($) {
     my $res = shift;
 
+    warn $res->status_line . "\n";
     warn $res->as_string if $ENV{DEBUG};
 
-    if ( $res->content_type =~ m{application/json} ) {
+    if ($res->content_type =~ /json/) {
         my $obj = decode_json($res->content);
         print JSON->new->pretty->encode($obj);
     }
-    elsif ( $res->content_type =~ m{text/html} ) {
-        print $res->status_line, "\n";
-    }
     else {
-        print $res->status_line, "\n";
         print $res->content;
     }
 }
@@ -98,23 +95,26 @@ sub _remove {
 }
 
 sub _register {
-    my ($public_key, $name, $base);
+    my ($public_key, $name, $base, $user_data);
     GetOptions(
         "public-key|k=s" => \$public_key,
         "name|n=s"       => \$name,
         "base|b=s"       => \$base,
+        "user-data|d=s"  => \$user_data,
     );
     my $url = url "vm/register";
     usage("register") if !defined $base || !defined $name;
 
-    my $key = file($public_key)->slurp;
+    my $key  = file($public_key)->slurp;
+    my $data = file($user_data)->slurp;
     pp request(
         POST $url,
         Content_Type => "form-data",
         Content => [
-            name => $name,
-            base => $base,
+            name       => $name,
+            base       => $base,
             public_key => $key,
+            user_data  => $data,
         ]
     );
 }
@@ -182,23 +182,23 @@ sub usage {
     say "Usage";
     $type //= "";
     if ( $type eq "register" ) {
-        say "$0 register --name vmname --base baseimage --public-key ~/.ssh/id_rsa.pub";
+        say "mezasi register --name vmname --base baseimage --public-key path/to/id_rsa.pub --user-data /path/to/user.sh";
     }
     elsif ( $type eq "public_key" ) {
-        say "$0 public_key vmname path/to/id_rsa.pub";
+        say "mezasi public_key vmname path/to/id_rsa.pub";
     }
     elsif ( $type eq "user_data" ) {
-        say "register: $0 user_data vmname path/to/user_data_file";
-        say "retrieve: $0 user_data vmname";
+        say "register: mezasi user_data vmname path/to/user_data_file";
+        say "retrieve: mezasi user_data vmname";
     }
     elsif ( $type =~ /^(start|stop|force_stop|remove|info)$/ ) {
-        say "$0 $type vmname";
+        say "mezasi $type vmname";
     }
     elsif ( $type eq "ssh" ) {
-        say "$0 ssh vmname [ssh options]";
+        say "mezasi ssh vmname [ssh options]";
     }
     else {
-        say "$0 (list|info|register|start|stop|force_stop|remove|public_key|config|ssh|user_data)";
+        say "mezasi (list|info|register|start|stop|force_stop|remove|public_key|config|ssh|user_data)";
     }
     print "\n";
     exit 1;
