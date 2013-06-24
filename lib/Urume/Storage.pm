@@ -213,6 +213,8 @@ sub remove_vm {
     $self->release_ip_addr( $vm->{ip_addr} );
     $self->redis->del("vm:$name");
     $self->redis->del("vm_status:$name");
+    $self->redis->del("public_key:$name");
+    $self->redis->del("user_data:$name");
 
     $self->redis->publish(
         "host_events_ch:$host" => "remove\t$name"
