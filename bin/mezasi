@@ -21,7 +21,7 @@ warn "endpoint: $endpoint\n";
 usage() unless defined $command;
 if ( my $func = main->can("_$command") ) {
     warn "command: $command\n";
-    $func->();
+    $func->(@ARGV);
 }
 else {
     usage();
@@ -64,32 +64,32 @@ sub _config {
 }
 
 sub _info {
-    my $name = shift @ARGV;
+    my $name = shift;
     usage("info") if !defined $name;
 
     pp request GET url "vm/info/$name";
 }
 
 sub _start {
-    my $name = shift @ARGV;
+    my $name = shift;
     usage("start") if !defined $name;
     pp request POST url "vm/start/$name";
 }
 
 sub _stop {
-    my $name = shift @ARGV;
+    my $name = shift;
     usage("start") if !defined $name;
     pp request POST url "vm/stop/$name";
 }
 
 sub _force_stop {
-    my $name = shift @ARGV;
+    my $name = shift;
     usage("start") if !defined $name;
     pp request POST url "vm/force_stop/$name";
 }
 
 sub _remove {
-    my $name = shift @ARGV;
+    my $name = shift;
     usage("start") if !defined $name;
     pp request POST url "vm/remove/$name";
 }
@@ -117,29 +117,55 @@ sub _register {
 }
 
 sub _public_key {
-    my $name = shift @ARGV;
-    my $file = shift @ARGV;
-    usage("public_key") if !defined $name || !defined $file;
-
+    my $name = shift;
+    my $file = shift;
+    usage("public_key") if !defined $name;
     my $url = url "public_key/$name";
-    my $key = file($file)->slurp;
-    pp request(
-        POST $url,
-        Content_Type => "form-data",
-        Content => [
-            public_key => $key,
-        ]
-    );
+
+    if ( defined $file ) {
+        my $key = file($file)->slurp;
+        pp request(
+            POST $url,
+            Content_Type => "form-data",
+            Content => [
+                public_key => $key,
+            ]
+        );
+    }
+    else {
+        pp request GET $url;
+    }
+}
+
+sub _user_data {
+    my $name = shift;
+    my $file = shift;
+    usage("user_data") if !defined $name;
+    my $url  = url "user_data/$name";
+
+    if ( defined $file ) {
+        my $data = file($file)->slurp;
+        pp request(
+            POST $url,
+            Content_Type => "form-data",
+            Content => [
+                user_data => $data,
+            ]
+        );
+    }
+    else {
+        pp request GET $url;
+    }
 }
 
 sub _ssh {
-    my $name = shift @ARGV;
+    my $name = shift;
     usage("ssh") if !defined $name;
 
     my $res = request GET url "vm/info/$name";
     if ( $res->code == 200 ) {
         my $vm  = decode_json($res->content);
-        my @command = ("ssh", $vm->{ip_addr}, @ARGV);
+        my @command = ("ssh", $vm->{ip_addr}, @_);
         print "@command\n";
         exec @command;
     }
@@ -156,7 +182,11 @@ sub usage {
         say "$0 register --name vmname --base baseimage --public-key ~/.ssh/id_rsa.pub";
     }
     elsif ( $type eq "public_key" ) {
-        say "$0 public_key vmname ~/.ssh/id_rsa.pub";
+        say "$0 public_key vmname path/to/id_rsa.pub";
+    }
+    elsif ( $type eq "user_data" ) {
+        say "register: $0 user_data vmname path/to/user_data_file";
+        say "retrieve: $0 user_data vmname";
     }
     elsif ( $type =~ /^(start|stop|force_stop|remove|info)$/ ) {
         say "$0 $type vmname";
@@ -165,7 +195,7 @@ sub usage {
         say "$0 ssh vmname [ssh options]";
     }
     else {
-        say "$0 (list|info|register|start|stop|force_stop|remove|public_key|config|ssh)";
+        say "$0 (list|info|register|start|stop|force_stop|remove|public_key|config|ssh|user_data)";
     }
     print "\n";
     exit 1;
