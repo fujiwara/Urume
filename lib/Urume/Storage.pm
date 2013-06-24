@@ -12,6 +12,7 @@ use JSON;
 use List::MoreUtils qw/ any /;
 use Redis;
 use Try::Tiny;
+use List::Util qw/ shuffle first /;
 
 my $NameRegex = qr/\A[a-zA-Z0-9][a-zA-Z0-9\-]+\z/;
 
@@ -177,20 +178,34 @@ sub register_vm {
 
     my $name = $args{name};
     croak "invalid name" if $name !~ $NameRegex;
-    my $host = $args{host};
-    my @hosts = grep { $_ eq $host } @{ $self->config->{hosts} };
-    croak "invalid host"
-        unless @hosts;
 
     my $base = $args{base};
-    my @bases = @{ $self->config->{base_images} };
-    push @bases,
-        map { $_->{name} }
-        grep { defined($_->{status}) && $_->{status} == Urume::VM_STATUS_STOP }
-        $self->list_vm;
+    my $host = $args{host};
 
-    unless ( grep { $_ eq $base } @bases ) {
-        croak "invalid base image";
+    my @bases = @{ $self->config->{base_images} };
+    if ( grep { $_ eq $base } @bases ) {
+        # config にある base を使用する場合
+        if (!$host) {
+            # host未指定ならランダム選択
+            $host = first { 1 } shuffle @{ $self->config->{hosts} };
+        }
+        else {
+            # host指定ならconfigにあるかどうか
+            my @hosts = grep { $_ eq $host } @{ $self->config->{hosts} };
+            croak "invalid host"
+                unless @hosts;
+        }
+    }
+    else {
+        # configにないbaseの場合は既存VMでofflineのものに含まれているか
+        my ($base_vm) = grep { $_->{name} eq $base && $_->{status} == Urume::VM_STATUS_STOP } $self->list_vm;
+        if ($base_vm) {
+            # 既存VMから作る場合は host は同じもの
+            $host = $base_vm->{host};
+        }
+        else {
+            croak "invalid base";
+        }
     }
 
     my $id  = $self->generate_new_id;

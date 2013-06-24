@@ -10,7 +10,6 @@ use JSON;
 use Net::IP;
 use Log::Minimal;
 use Urume::Storage;
-use List::Util qw/ shuffle first /;
 
 filter 'auto' => sub {
     my $app = shift;
@@ -61,9 +60,6 @@ post '/vm/register' => [qw/auto/] => sub {
     my %args
         = map { $_ => scalar $c->req->param($_) }
             qw/ name host base /;
-    if (!$args{host}) {
-        $args{host} = first { 1 } shuffle @{ $self->config->{hosts} };
-    }
     my $vm = $self->storage->register_vm(%args);
 
     $self->storage->clone_vm( name => $vm->{name} );
