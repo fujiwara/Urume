@@ -197,22 +197,33 @@ get '/user_data' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
     my $ip_addr = $c->req->address;
-    my $key     = $self->storage->retrieve_user_data( ip_addr => $ip_addr )
-        or return $self->error( $c, 404, "user_data not found" );
+    my $data = $self->storage->retrieve_user_data( ip_addr => $ip_addr );
 
     $c->res->content_type("text/plain");
-    $c->res->body($key);
+    if (defined $data) {
+        $c->res->body($data);
+    }
+    else {
+        $c->res->status(404);
+        $c->res->body("## user_data is not found\n");
+    }
     $c->res;
+
 };
 
 get '/user_data/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my $key = $self->storage->retrieve_user_data( name => $c->args->{name} )
-        or return $self->error( $c, 404, "user_data not found" );
+    my $data = $self->storage->retrieve_user_data( name => $c->args->{name} );
 
     $c->res->content_type("text/plain");
-    $c->res->body($key);
+    if (defined $data) {
+        $c->res->body($data);
+    }
+    else {
+        $c->res->status(404);
+        $c->res->body("## user_data is not found\n");
+    }
     $c->res;
 };
 

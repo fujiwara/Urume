@@ -42,14 +42,17 @@ sub request($) {
 sub pp($) {
     my $res = shift;
 
-    warn $res->status_line . "\n";
     warn $res->as_string if $ENV{DEBUG};
 
-    if ($res->content_type =~ /json/) {
+    if ( $res->content_type =~ m{application/json} ) {
         my $obj = decode_json($res->content);
         print JSON->new->pretty->encode($obj);
     }
+    elsif ( $res->content_type =~ m{text/html} ) {
+        print $res->status_line, "\n";
+    }
     else {
+        print $res->status_line, "\n";
         print $res->content;
     }
 }
