@@ -156,11 +156,16 @@ get '/public_key' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
     my $ip_addr = $c->req->address;
-    my $key     = $self->storage->retrieve_public_key( ip_addr => $ip_addr )
-        or return $self->error( $c, 404, "public_key not found" );
+    my $key     = $self->storage->retrieve_public_key( ip_addr => $ip_addr );
 
-    $c->res->content_type("text/plain; charset=utf8");
-    $c->res->body($key);
+    $c->res->content_type("text/plain");
+    if (defined $key) {
+        $c->res->body($key);
+    }
+    else {
+        $c->res->status(404);
+        $c->res->body("");
+    }
     $c->res;
 };
 
