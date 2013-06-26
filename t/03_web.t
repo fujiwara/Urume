@@ -118,6 +118,11 @@ subtest_psgi "/public_key", $app, sub {
     is $res->code, 200;
     is $res->content_type, "text/plain";
     is $res->content, "ssh-rsa AAAAyyyy";
+
+    $res = $cb->(GET "http://localhost/public_key/testvmxxxxxxx");
+    is $res->code, 404;
+    is $res->content_type, "text/plain";
+    is $res->content, "";
 };
 
 subtest_psgi "/user_data", $app, sub {

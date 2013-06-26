@@ -167,11 +167,16 @@ get '/public_key' => [qw/auto/] => sub {
 get '/public_key/:name' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
-    my $key = $self->storage->retrieve_public_key( name => $c->args->{name} )
-        or return $self->error( $c, 404, "public_key not found" );
+    my $key = $self->storage->retrieve_public_key( name => $c->args->{name} );
 
-    $c->res->content_type("text/plain; charset=utf8");
-    $c->res->body($key);
+    $c->res->content_type("text/plain");
+    if (defined $key) {
+        $c->res->body($key);
+    }
+    else {
+        $c->res->status(404);
+        $c->res->body("");
+    }
     $c->res;
 };
 
@@ -204,7 +209,6 @@ get '/user_data' => [qw/auto/] => sub {
         $c->res->body("## user_data is not found\n");
     }
     $c->res;
-
 };
 
 get '/user_data/:name' => [qw/auto/] => sub {
