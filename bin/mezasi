@@ -105,8 +105,8 @@ sub _register {
     my $url = url "vm/register";
     usage("register") if !defined $base || !defined $name;
 
-    my $key  = file($public_key)->slurp;
-    my $data = file($user_data)->slurp;
+    my $key  = $public_key ? file($public_key)->slurp : undef;
+    my $data = $user_data  ? file($user_data)->slurp  : undef;
     pp request(
         POST $url,
         Content_Type => "form-data",
