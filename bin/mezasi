@@ -8,6 +8,14 @@ use LWP::UserAgent;
 use HTTP::Request::Common;
 use JSON;
 use Path::Class qw/ file /;
+use Log::Minimal;
+
+local $Log::Minimal::PRINT = sub {
+    my ( $time, $type, $message, $trace, $raw_message ) = @_;
+    warn "$time [$type] $message\n";
+};
+local $Log::Minimal::COLOR = -t STDERR;
+local $ENV{LM_DEBUG} = $ENV{DEBUG};
 
 my $command = shift;
 my $config = pit_get("urume.config", require => {
@@ -16,11 +24,11 @@ my $config = pit_get("urume.config", require => {
 my $ua = LWP::UserAgent->new( agent => "Mezasi/0.1" );
 my $endpoint = $config->{endpoint};
 $endpoint .= "/" if $endpoint !~ m{/$};
-warn "endpoint: $endpoint\n";
+infof "endpoint: %s", $endpoint;
 
 usage() unless defined $command;
 if ( my $func = main->can("_$command") ) {
-    warn "command: $command\n";
+    infof "command: %s", $command;
     $func->(@ARGV);
 }
 else {
@@ -42,8 +50,8 @@ sub request($) {
 sub pp($) {
     my $res = shift;
 
-    warn $res->status_line . "\n";
-    warn $res->as_string if $ENV{DEBUG};
+    infof $res->status_line;
+    warn $res->as_string if $ENV{DEUBG};
 
     if ($res->content_type =~ /json/) {
         my $obj = decode_json($res->content);
@@ -169,7 +177,7 @@ sub _ssh {
     if ( $res->code == 200 ) {
         my $vm  = decode_json($res->content);
         my @command = ("ssh", $vm->{ip_addr}, @_);
-        print "@command\n";
+        infof "@command";
         exec @command;
     }
     else {
