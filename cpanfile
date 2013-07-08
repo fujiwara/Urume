@@ -9,6 +9,7 @@ requires 'LWP::UserAgent';
 requires 'HTTP::Request::Common';
 requires 'JSON';
 requires 'Path::Class';
+requires 'IO::Prompt::Tiny';
 
 on 'test' => sub {
     requires 'Test::More', '0.98';
