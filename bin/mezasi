@@ -9,6 +9,7 @@ use HTTP::Request::Common;
 use JSON;
 use Path::Class qw/ file /;
 use Log::Minimal;
+use IO::Prompt::Tiny qw/prompt/;
 
 local $Log::Minimal::PRINT = sub {
     my ( $time, $type, $message, $trace, $raw_message ) = @_;
@@ -99,7 +100,13 @@ sub _force_stop {
 sub _remove {
     my $name = shift;
     usage("start") if !defined $name;
-    pp request POST url "vm/remove/$name";
+    my $answer = prompt("Really remove $name? [y/N]", "n");
+    if ( $answer =~ /^[Yy]/ ) {
+        pp request POST url "vm/remove/$name";
+    }
+    else {
+        exit 1;
+    }
 }
 
 sub _register {
