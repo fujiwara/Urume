@@ -22,7 +22,10 @@ my $command = shift;
 my $config = pit_get("urume.config", require => {
     endpoint => "Urume API endpoint",
 });
-my $ua = LWP::UserAgent->new( agent => "Mezasi/0.1" );
+my $ua = LWP::UserAgent->new(
+    agent   => "Mezasi/0.1",
+    timeout => 300,
+);
 my $endpoint = $config->{endpoint};
 $endpoint .= "/" if $endpoint !~ m{/$};
 infof "endpoint: %s", $endpoint;
@@ -110,12 +113,13 @@ sub _remove {
 }
 
 sub _register {
-    my ($public_key, $name, $base, $user_data);
+    my ($public_key, $name, $base, $user_data, $wait);
     GetOptions(
         "public-key|k=s" => \$public_key,
         "name|n=s"       => \$name,
         "base|b=s"       => \$base,
         "user-data|d=s"  => \$user_data,
+        "wait|w"         => \$wait,
     );
     my $url = url "vm/register";
     usage("register") if !defined $base || !defined $name;
@@ -131,6 +135,11 @@ sub _register {
             public_key => $key,
             user_data  => $data,
         ]
+    );
+    return unless $wait;
+    infof "waiting for vm boot up...";
+    pp request(
+        GET url "notify/$name",
     );
 }
 
@@ -194,26 +203,31 @@ sub _ssh {
 
 sub usage {
     my $type = shift;
-    say "Usage";
+    say "Usage:";
     $type //= "";
     if ( $type eq "register" ) {
-        say "mezasi register --name vmname --base baseimage --public-key path/to/id_rsa.pub --user-data /path/to/user.sh";
+        say " mezasi register --name vmname --base baseimage [--public-key path/to/id_rsa.pub] [--user-data /path/to/user.sh]";
+        say "  --name       : vm name (* required)";
+        say "  --base       : base image (*)";
+        say "  --public-key : path to ssh public key file (for root\@vm)";
+        say "  --user-data  : path to shell script executed on boot up";
+        say "  --wait       : wait for vm boot up";
     }
     elsif ( $type eq "public_key" ) {
-        say "mezasi public_key vmname path/to/id_rsa.pub";
+        say " mezasi public_key vmname path/to/id_rsa.pub";
     }
     elsif ( $type eq "user_data" ) {
         say "register: mezasi user_data vmname path/to/user_data_file";
         say "retrieve: mezasi user_data vmname";
     }
     elsif ( $type =~ /^(start|stop|force_stop|remove|info)$/ ) {
-        say "mezasi $type vmname";
+        say " mezasi $type vmname";
     }
     elsif ( $type eq "ssh" ) {
-        say "mezasi ssh vmname [ssh options]";
+        say " mezasi ssh vmname [ssh options]";
     }
     else {
-        say "mezasi (list|info|register|start|stop|force_stop|remove|public_key|config|ssh|user_data)";
+        say " mezasi (list|info|register|start|stop|force_stop|remove|public_key|config|ssh|user_data)";
     }
     print "\n";
     exit 1;
