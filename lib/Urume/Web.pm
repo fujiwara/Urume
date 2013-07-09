@@ -156,8 +156,11 @@ get '/public_key' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
 
     my $ip_addr = $c->req->address;
-    my $key     = $self->storage->retrieve_public_key( ip_addr => $ip_addr );
+    my $vm      = $self->storage->get_vm( ip_addr => $ip_addr );
+    my $key     = $vm ? $vm->{public_key}
+                      : undef;
 
+    $self->storage->publish_vm_event( $vm => "GET /public_key" );
     $c->res->content_type("text/plain");
     if (defined $key) {
         $c->res->body($key);

@@ -353,6 +353,13 @@ sub publish_dnsmasq_conf {
     }
 }
 
+sub publish_vm_event {
+    my $self = shift;
+    my ($vm, $message) = @_;
+    my $name = $vm->{name};
+    $self->redis->publish("vm_events_ch:$name" => $message);
+}
+
 1;
 
 __END__
