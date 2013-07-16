@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use 5.12.0;
-use Config::Pit;
+use Config::Pit ();
 use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 use LWP::UserAgent;
 use HTTP::Request::Common;
@@ -10,27 +10,13 @@ use JSON;
 use Path::Class qw/ file /;
 use Log::Minimal;
 use IO::Prompt::Tiny qw/prompt/;
-
-local $Log::Minimal::PRINT = sub {
-    my ( $time, $type, $message, $trace, $raw_message ) = @_;
-    warn "$time [$type] $message\n";
-};
-local $Log::Minimal::COLOR = -t STDERR;
-local $ENV{LM_DEBUG} = $ENV{DEBUG};
+use String::Random;
 
 my $command = shift;
-my $config = pit_get("urume.config", require => {
-    endpoint => "Urume API endpoint",
-});
-my $ua = LWP::UserAgent->new(
-    agent   => "Mezasi/0.1",
-    timeout => 300,
-);
-my $endpoint = $config->{endpoint};
-$endpoint .= "/" if $endpoint !~ m{/$};
-infof "endpoint: %s", $endpoint;
+my ($ua, $endpoint) = init();
 
 usage() unless defined $command;
+
 if ( my $func = main->can("_$command") ) {
     infof "command: %s", $command;
     $func->(@ARGV);
@@ -54,7 +40,12 @@ sub request($) {
 sub pp($) {
     my $res = shift;
 
-    infof $res->status_line;
+    if ( $res->code =~ /^2/ ) {
+        infof $res->status_line;
+    }
+    else {
+        warnf $res->status_line;
+    }
     warn $res->as_string if $ENV{DEUBG};
 
     if ($res->content_type =~ /json/) {
@@ -71,7 +62,6 @@ sub _list {
 }
 
 sub _config {
-    my $url = $endpoint . "config";
     pp request GET url "config";
 }
 
@@ -233,3 +223,33 @@ sub usage {
     exit 1;
 }
 
+sub generate_new_password {
+    String::Random->new->randpattern(
+        join( "", map { (qw/ c C n ! /)[rand 4] } ( 1 .. 12 ) )
+    );
+}
+
+sub init {
+    $Log::Minimal::PRINT = sub {
+        my ( $time, $type, $message, $trace, $raw_message ) = @_;
+        warn "$time [$type] $message\n";
+    };
+    $Log::Minimal::COLOR = -t STDERR;
+    $ENV{LM_DEBUG} = $ENV{DEBUG};
+
+    my $config = Config::Pit::pit_get("urume.config", require => {
+        endpoint => "API endpoint (http://....)",
+    });
+    $config->{password} //= generate_new_password();
+    Config::Pit::set("urume.config", data => $config);
+
+    my $ua = LWP::UserAgent->new(
+        agent   => "Mezasi/0.1",
+        timeout => 300,
+    );
+    my $endpoint = $config->{endpoint};
+    $endpoint .= "/" if $endpoint !~ m{/$};
+    infof "endpoint: %s", $endpoint;
+
+    return ($ua, $endpoint);
+}
