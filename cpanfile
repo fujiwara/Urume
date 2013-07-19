@@ -10,6 +10,9 @@ requires 'HTTP::Request::Common';
 requires 'JSON';
 requires 'Path::Class';
 requires 'IO::Prompt::Tiny';
+requires 'EV::Hiredis';
+requires 'AnyEvent';
+requires 'String::Random';
 
 on 'test' => sub {
     requires 'Test::More', '0.98';
