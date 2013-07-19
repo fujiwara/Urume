@@ -91,9 +91,17 @@ sub _force_stop {
 }
 
 sub _remove {
-    my $name = shift;
+    my $name = pop;
     usage("start") if !defined $name;
-    my $answer = prompt("Really remove $name? [y/N]", "n");
+
+    my $yes;
+    GetOptions(
+        "yes|y" => \$yes,
+    );
+
+    my $answer = $yes
+               ? "Y"
+               : prompt("Really remove $name? [y/N]", "n");
     if ( $answer =~ /^[Yy]/ ) {
         pp request POST url "vm/remove/$name";
     }
