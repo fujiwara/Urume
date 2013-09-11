@@ -55,6 +55,7 @@ sub pp($) {
     else {
         print $res->content;
     }
+    $res;
 }
 
 sub _list {
@@ -124,7 +125,7 @@ sub _register {
 
     my $key  = $public_key ? file($public_key)->slurp : undef;
     my $data = $user_data  ? file($user_data)->slurp  : undef;
-    pp request(
+    my $res = pp request(
         POST $url,
         Content_Type => "form-data",
         Content => [
@@ -134,6 +135,7 @@ sub _register {
             user_data  => $data,
         ]
     );
+    exit 1 unless $res->is_success;
     return unless $wait;
     infof "waiting for vm boot up...";
     pp request(
