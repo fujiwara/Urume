@@ -13,6 +13,7 @@ requires 'IO::Prompt::Tiny';
 requires 'EV::Hiredis';
 requires 'AnyEvent';
 requires 'String::Random';
+requires 'Config::Pit';
 
 on 'test' => sub {
     requires 'Test::More', '0.98';
