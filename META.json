@@ -42,8 +42,11 @@
       },
       "runtime" : {
          "requires" : {
+            "AnyEvent" : "0",
             "Config::PL" : "0",
+            "EV::Hiredis" : "0",
             "HTTP::Request::Common" : "0",
+            "IO::Prompt::Tiny" : "0",
             "JSON" : "0",
             "Kossy" : "0",
             "LWP::UserAgent" : "0",
@@ -52,6 +55,7 @@
             "Plack" : "0",
             "Proclet" : "0",
             "Redis" : "0",
+            "String::Random" : "0",
             "perl" : "5.008005"
          }
       },
