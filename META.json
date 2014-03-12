@@ -45,6 +45,7 @@
          "requires" : {
             "AnyEvent" : "0",
             "Config::PL" : "0",
+            "Config::Pit" : "0",
             "EV::Hiredis" : "0",
             "HTTP::Request::Common" : "0",
             "IO::Prompt::Tiny" : "0",
