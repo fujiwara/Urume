@@ -248,6 +248,21 @@ post '/user_data/:name' => [qw/auto/] => sub {
     $c->render_json({ ok => JSON::true });
 };
 
+post '/port_map/:name' => [qw/auto/] => sub {
+    my ( $self, $c )  = @_;
+
+    my $port = $c->req->param('port');
+    if ( !defined $port || $port !~ /\A[0-9]+\z/ ) {
+        return $self->error( $c, 400, "param port(integer) required" );
+    }
+
+    $self->storage->register_port_map(
+        name => $c->args->{name},
+        port => int($port),
+    );
+    $c->render_json({ ok => JSON::true });
+};
+
 post '/init' => [qw/auto/] => sub {
     my ( $self, $c )  = @_;
     $self->storage->init;

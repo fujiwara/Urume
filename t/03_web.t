@@ -151,4 +151,26 @@ subtest_psgi "/user_data", $app, sub {
     is $res->content, "#!/bin/sh\necho 'HELLO WORLD'\n";
 };
 
+subtest_psgi "/port_map", $app, sub {
+    my $cb  = shift;
+    my ($req, $res);
+
+    $req = POST "http://localhost/port_map/testvm",
+               Content_Type => "form-data",
+               Content => [
+                   port => 8080,
+               ];
+    $res = $cb->($req);
+    is $res->code, 200;
+    my $r = decode_json($res->content);
+    isa_ok $r, "HASH";
+    ok $r->{ok};
+
+    $res = $cb->(GET "http://localhost/vm/info/testvm");
+    is $res->code, 200;
+    my $vm = decode_json($res->content);
+    is $vm->{port_map} => "$vm->{ip_addr}:8080";
+};
+
+
 done_testing;

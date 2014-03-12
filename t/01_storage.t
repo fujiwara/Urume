@@ -184,4 +184,28 @@ subtest "vm dup register" => sub {
     };
 };
 
+subtest "port_map" => sub {
+    my $vm = $storage->register_vm(
+        name => "testvm4",
+        host => "host01",
+        base => "sl6",
+    );
+    my $ip = $vm->{ip_addr};
+
+    ok $storage->register_port_map(
+        name => "testvm4",
+        port => 8080,
+    );
+    $vm = $storage->get_vm( name => "testvm4" );
+    is $vm->{port_map} => "$vm->{ip_addr}:8080", "port_map defined";
+
+    ok $storage->register_port_map(
+        name => "testvm4",
+        port => 0,
+    );
+    $vm = $storage->get_vm( name => "testvm4" );
+    is $vm->{port_map} => undef, "port_map undefined";
+};
+
+
 done_testing;

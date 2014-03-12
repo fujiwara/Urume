@@ -139,6 +139,14 @@ Retieve user data by request IP address.
 GET <: $c.req.uri_for('/user_data/') :>{name}
 </pre>
 
+<h3>Register port map for VM</h3>
+<pre>
+POST <: $c.req.uri_for('/port_map/') :>{name}
+parameters:
+  port: forwarded HTTP port on VM (0: remove port map)
+</pre>
+
+
 <h3>Get dnsmasq.conf</h3>
 
 <pre>

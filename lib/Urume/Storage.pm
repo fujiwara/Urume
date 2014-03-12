@@ -131,6 +131,8 @@ sub list_vm {
     for my $vm (@vm) {
         $vm->{status}     = $redis->get("vm_status:$vm->{name}");
         $vm->{public_key} = $redis->get("public_key:$vm->{name}");
+        my $port_map = $redis->get("port_map:$vm->{name}");
+        $vm->{port_map} = $port_map if defined $port_map;
     }
     @vm;
 }
@@ -153,6 +155,8 @@ sub get_vm {
     my $vm = decode_json($vm_str);
     $vm->{status}     = $redis->get("vm_status:$vm->{name}");
     $vm->{public_key} = $redis->get("public_key:$vm->{name}");
+    my $port_map = $redis->get("port_map:$vm->{name}");
+    $vm->{port_map}   = $port_map if defined $port_map;
     $vm;
 }
 
@@ -236,6 +240,7 @@ sub remove_vm {
     $self->redis->del("vm_status:$name");
     $self->redis->del("public_key:$name");
     $self->redis->del("user_data:$name");
+    $self->redis->del("port_map:$name");
 
     $self->redis->publish(
         "host_events_ch:$host" => "remove\t$name"
@@ -340,6 +345,22 @@ sub retrieve_user_data {
     return unless $vm;
 
     $self->redis->get("user_data:$vm->{name}");
+}
+
+sub register_port_map {
+    my $self = shift;
+    my %args = @_;
+    my $vm   = $self->get_vm(%args);
+    if ( $args{port} > 0 ) {
+        $self->redis->set(
+            "port_map:$vm->{name}" => sprintf(
+                "%s:%d", $vm->{ip_addr}, $args{port},
+            ),
+        );
+    }
+    elsif ( $args{port} == 0 ) {
+        $self->redis->del("port_map:$vm->{name}");
+    }
 }
 
 sub publish_dnsmasq_conf {
