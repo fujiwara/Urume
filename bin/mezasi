@@ -185,6 +185,23 @@ sub _user_data {
     }
 }
 
+sub _port_map {
+    my $name = shift;
+    my $port = shift;
+    usage("port_map") if !defined $name || !defined $port;
+    my $url  = url "port_map/$name";
+
+    if ( defined $port ) {
+        pp request(
+            POST $url,
+            Content_Type => "form-data",
+            Content => [
+                port => $port,
+            ]
+        );
+    }
+}
+
 sub _ssh {
     my $name = shift;
     usage("ssh") if !defined $name;
@@ -220,6 +237,10 @@ sub usage {
         say "register: mezasi user_data vmname path/to/user_data_file";
         say "retrieve: mezasi user_data vmname";
     }
+    elsif ( $type eq "port_map" ) {
+        say "register: mezasi port_map vmname [port:Int]";
+        say "remove: mezasi port_map vmname 0";
+    }
     elsif ( $type =~ /^(start|stop|force_stop|remove|info)$/ ) {
         say " mezasi $type vmname";
     }
@@ -227,7 +248,7 @@ sub usage {
         say " mezasi ssh vmname [ssh options]";
     }
     else {
-        say " mezasi (list|info|register|start|stop|force_stop|remove|public_key|config|ssh|user_data)";
+        say " mezasi (list|info|register|start|stop|force_stop|remove|public_key|config|ssh|user_data|port_map)";
     }
     print "\n";
     exit 1;
